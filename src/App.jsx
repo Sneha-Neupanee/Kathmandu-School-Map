@@ -4,6 +4,7 @@ import Map from './components/Map';
 import Sidebar from './components/Sidebar';
 import SchoolDetails from './components/SchoolDetails';
 import Toolbar from './components/Toolbar';
+import MapOverlayPanel from './components/MapOverlayPanel';
 import ComparisonPanel from './components/ComparisonPanel';
 import { Loader2, AlertCircle, Moon, Sun } from 'lucide-react';
 import { useEffect } from 'react';
@@ -21,9 +22,18 @@ function App() {
     retry,
   } = useSchoolsData();
 
-  const handleFlyToRef = useRef(null); // Ref to hold FlyTo function from Map
+  const handleFlyToRef = useRef(null);
+  const handleResetMapRef = useRef(null);
+  const handleFlyToLocationRef = useRef(null); // Exposed from Map for location search
   const [selectedSchool, setSelectedSchool] = useState(null);
-  const [activeMode, setActiveMode] = useState('default'); // Modes for toolbar
+  const [activeMode, setActiveMode] = useState('default');
+
+  const handleLocationFound = ({ lat, lng, name }) => {
+    // Fly to location
+    if (handleFlyToLocationRef.current) handleFlyToLocationRef.current({ lat, lng });
+    // If in compare mode, use this as the reference point
+    if (activeMode === 'compare') setCompareRefPoint({ lat, lng });
+  };
 
   const [comparisonSchools, setComparisonSchools] = useState([]);
   const [compareRefPoint, setCompareRefPoint] = useState(null);
@@ -34,8 +44,6 @@ function App() {
     analyze: { center: null, radius: 2, stats: null },
     bestLocation: { selectedPoint: null, nearestSchools: [], score: 0, scoreLabel: '' }
   });
-
-  const handleResetMapRef = useRef(null);
 
   const resetView = () => {
     setActiveMode('default');
@@ -52,6 +60,21 @@ function App() {
     });
     if (handleResetMapRef.current) handleResetMapRef.current();
   };
+
+  useEffect(() => {
+    if (activeMode !== 'default') {
+      setSelectedSchool(null);
+    }
+    setSearchTerm('');
+    setComparisonSchools([]);
+    setCompareRefPoint(null);
+    setShowComparePanel(false);
+    setModeState({
+      measure: { start: null, end: null, distance: null },
+      analyze: { center: null, radius: 2, stats: null },
+      bestLocation: { selectedPoint: null, nearestSchools: [], score: 0, scoreLabel: '' }
+    });
+  }, [activeMode]);
 
   const [isDarkMode, setIsDarkMode] = useState(false); // default LIGHT mode
   useEffect(() => {
@@ -116,25 +139,8 @@ function App() {
             const next = mapStyle === 'light' ? 'satellite' : 'light';
             setMapStyle(next);
           }}
+          onLocationFound={handleLocationFound}
         />
-
-        {/* Floating Mode Instruction Box */}
-        {activeMode !== 'default' && (
-          <div className="absolute top-[68px] left-4 z-20 bg-white/95 backdrop-blur-sm shadow-md border border-slate-200 rounded-lg p-3 w-64 pointer-events-auto">
-            <h4 className="font-bold text-slate-800 text-sm mb-1">
-              {activeMode === 'measure' && 'Measure Distance'}
-              {activeMode === 'analyze' && 'Analyze Area'}
-              {activeMode === 'bestLocation' && 'Best Location'}
-              {activeMode === 'compare' && 'Compare Schools'}
-            </h4>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              {activeMode === 'measure' && 'Click two points on the map to calculate distance.'}
-              {activeMode === 'analyze' && 'Click anywhere to analyze school density within a selected radius.'}
-              {activeMode === 'bestLocation' && 'Click anywhere to find nearest schools and accessibility score.'}
-              {activeMode === 'compare' && 'Select up to 3 schools from map or search to compare.'}
-            </p>
-          </div>
-        )}
 
         {/* Theme toggle — anchored top-right, shifted left from map controls */}
         <div className="absolute top-3 right-16 z-20">
@@ -202,45 +208,35 @@ function App() {
           modeState={modeState}
           setModeState={setModeState}
           registerResetMap={(resetFn) => { handleResetMapRef.current = resetFn; }}
+          registerFlyToLocation={(fn) => { handleFlyToLocationRef.current = fn; }}
         />
 
 
-        {/* Comparison Multi-Select Overlay & Panel */}
-        {activeMode === 'compare' && (
-          <>
-            {comparisonSchools.length > 0 && !showComparePanel && (
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 bg-white px-5 py-3 rounded-xl shadow-2xl border border-slate-200 flex items-center gap-4 animate-bounce shrink-0">
-                <p className="text-sm font-semibold text-slate-700 whitespace-nowrap">
-                  <span className="text-blue-600 font-bold">{comparisonSchools.length}</span> / 3 selected
-                </p>
-                <button
-                  onClick={() => setShowComparePanel(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition-colors whitespace-nowrap"
-                >
-                  Compare Now
-                </button>
-                <button
-                  onClick={() => setComparisonSchools([])}
-                  className="text-slate-400 hover:text-red-500 text-sm font-medium transition-colors"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
+        {/* Mode specific overlay mapped safely to UI bottom-left side */}
+        <MapOverlayPanel
+          activeMode={activeMode}
+          setActiveMode={setActiveMode}
+          modeState={modeState}
+          setModeState={setModeState}
+          comparisonSchools={comparisonSchools}
+          setComparisonSchools={setComparisonSchools}
+          showComparePanel={showComparePanel}
+          setShowComparePanel={setShowComparePanel}
+          compareRefPoint={compareRefPoint}
+        />
 
-            {showComparePanel && (
-              <ComparisonPanel
-                schools={comparisonSchools}
-                referencePoint={compareRefPoint}
-                onRemove={(id) => {
-                  const updated = comparisonSchools.filter(s => s.id !== id);
-                  setComparisonSchools(updated);
-                  if (updated.length === 0) setShowComparePanel(false);
-                }}
-                onClose={() => setShowComparePanel(false)}
-              />
-            )}
-          </>
+        {/* The actual Comparison Panel overlaying if expanded */}
+        {activeMode === 'compare' && showComparePanel && (
+          <ComparisonPanel
+            schools={comparisonSchools}
+            referencePoint={compareRefPoint}
+            onRemove={(id) => {
+              const updated = comparisonSchools.filter(s => s.id !== id);
+              setComparisonSchools(updated);
+              if (updated.length === 0) setShowComparePanel(false);
+            }}
+            onClose={() => setShowComparePanel(false)}
+          />
         )}
 
       </div>

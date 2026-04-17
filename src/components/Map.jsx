@@ -40,7 +40,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool, comparisonSchools, mapStyle, setMapStyle, viewMode, setViewMode, modeState, setModeState, registerResetMap }) {
+function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool, comparisonSchools, mapStyle, setMapStyle, viewMode, setViewMode, modeState, setModeState, registerResetMap, registerFlyToLocation }) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const markersRef = useRef([]);
@@ -50,8 +50,15 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
     const selectedPopupRef = useRef(null);
     const selectedMarkerRef = useRef(null);
 
-    // Area analysis and measure dependencies lifted to App.jsx now
-    // Clustering
+    // Refs to always have fresh values inside map event handlers (avoids stale closures)
+    const activeModeRef = useRef(activeMode);
+    const dataRef = useRef(data);
+    const modeStateRef = useRef(modeState);
+    const onMapClickRef = useRef(onMapClick);
+    useEffect(() => { activeModeRef.current = activeMode; }, [activeMode]);
+    useEffect(() => { dataRef.current = data; }, [data]);
+    useEffect(() => { modeStateRef.current = modeState; }, [modeState]);
+    useEffect(() => { onMapClickRef.current = onMapClick; }, [onMapClick]);
     const [clusterer, setClusterer] = useState(null);
     const [clusters, setClusters] = useState([]);
 
@@ -82,6 +89,13 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                     curve: 1.4,
                     essential: true
                 });
+            });
+        }
+
+        if (registerFlyToLocation) {
+            registerFlyToLocation(({ lat, lng }) => {
+                if (!map.current) return;
+                map.current.flyTo({ center: [lng, lat], zoom: 16, speed: 1.2, curve: 1.4, essential: true });
             });
         }
 
@@ -219,6 +233,15 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
         };
     }, [selectedSchool]);
 
+    // Cleanup nearest markers on activeMode change
+    useEffect(() => {
+        if (!map.current) return;
+        if (activeMode !== 'default' && activeMode !== 'analyze' && activeMode !== 'bestLocation') {
+            if (nearestMarkerRef.current) nearestMarkerRef.current.remove();
+            if (nearestPopupRef.current) nearestPopupRef.current.remove();
+        }
+    }, [activeMode]);
+
     // Sync Markers and click listener
     useEffect(() => {
         if (!map.current || !clusters) return;
@@ -241,7 +264,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                     let colorClass = pointCount > 30 ? 'bg-red-500 border-red-200' : pointCount > 10 ? 'bg-amber-500 border-amber-200 text-amber-950' : 'bg-blue-500 border-blue-200 text-white';
                     let sizeClass = pointCount > 30 ? 'w-10 h-10 text-sm' : pointCount > 10 ? 'w-8 h-8 text-xs' : 'w-7 h-7 text-[10px]';
 
-                    el.className = `${sizeClass} ${colorClass} rounded-full border-[3px] flex items-center justify-center font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200`;
+                    el.className = `${sizeClass} ${colorClass} rounded-full border-[3px] flex items-center justify-center font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 z-0`;
                     el.innerText = pointCount;
                     el.title = "Click to zoom into this area";
 
@@ -290,26 +313,41 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
         }
     }, [data, onSchoolSelect, activeMode, clusters, comparisonSchools]);
 
-    // Map Click Listener
+    // Map Click Listener — registered ONCE, reads fresh values via refs
     useEffect(() => {
         if (!map.current) return;
 
+        const placeBlueDot = (lng, lat) => {
+            if (nearestMarkerRef.current) nearestMarkerRef.current.remove();
+            if (nearestPopupRef.current) nearestPopupRef.current.remove();
+            nearestMarkerRef.current = null;
+            nearestPopupRef.current = null;
+
+            const el = document.createElement('div');
+            el.style.cssText = 'width:16px;height:16px;background:#2563eb;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(37,99,235,0.5);z-index:1;';
+            nearestMarkerRef.current = new maplibregl.Marker({ element: el })
+                .setLngLat([lng, lat])
+                .addTo(map.current);
+        };
+
         const handleMapClick = (e) => {
             const { lng, lat } = e.lngLat;
+            const mode = activeModeRef.current;
+            const currentData = dataRef.current;
+            const currentModeState = modeStateRef.current;
 
-            if (activeMode === 'analyze') {
+            if (mode === 'analyze') {
                 setModeState(m => ({ ...m, analyze: { ...m.analyze, center: { lng, lat } } }));
+                placeBlueDot(lng, lat);
                 return;
             }
 
-            if (activeMode === 'measure') {
-                if (!modeState.measure.start || (modeState.measure.start && modeState.measure.end)) {
-                    // Start fresh
+            if (mode === 'measure') {
+                if (!currentModeState.measure.start || (currentModeState.measure.start && currentModeState.measure.end)) {
                     setModeState(m => ({ ...m, measure: { start: { lng, lat }, end: null, distance: null } }));
-                } else if (modeState.measure.start && !modeState.measure.end) {
-                    // Second point selected
+                } else if (currentModeState.measure.start && !currentModeState.measure.end) {
                     const dist = turf.distance(
-                        turf.point([modeState.measure.start.lng, modeState.measure.start.lat]),
+                        turf.point([currentModeState.measure.start.lng, currentModeState.measure.start.lat]),
                         turf.point([lng, lat]),
                         { units: 'kilometers' }
                     );
@@ -318,16 +356,17 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 return;
             }
 
-            if (activeMode === 'compare') {
-                if (onMapClick) onMapClick({ lng, lat });
+            if (mode === 'compare') {
+                if (onMapClickRef.current) onMapClickRef.current({ lng, lat });
+                placeBlueDot(lng, lat);
                 return;
             }
 
-            if (data.length === 0) return;
+            if (!currentData || currentData.length === 0) return;
 
-            if (activeMode === 'bestLocation') {
+            if (mode === 'bestLocation') {
                 const centerPt = turf.point([lng, lat]);
-                const sorted = [...data].map(s => {
+                const sorted = [...currentData].map(s => {
                     const dist = turf.distance(centerPt, turf.point([s.lon, s.lat]), { units: 'kilometers' });
                     return { ...s, dist };
                 }).sort((a, b) => a.dist - b.dist);
@@ -337,36 +376,62 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 const rawScore = (within2km.length * 1) + (within2km.filter(s => s.schoolType === 'public').length * 1.5);
                 let score = Math.min(10, rawScore / 2);
                 let scoreLabel = score > 7 ? 'Excellent' : score > 4 ? 'Good' : 'Poor';
+                const scoreBadgeColor = score > 7 ? '#16a34a' : score > 4 ? '#d97706' : '#dc2626';
 
                 setModeState(m => ({
                     ...m,
                     bestLocation: { selectedPoint: { lng, lat }, nearestSchools: nearest3, score, scoreLabel }
                 }));
 
-                if (nearestMarkerRef.current) nearestMarkerRef.current.remove();
-                if (nearestPopupRef.current) nearestPopupRef.current.remove();
+                placeBlueDot(lng, lat);
 
-                const el = document.createElement('div');
-                el.className = 'w-4 h-4 bg-purple-500 rounded-full border-2 border-white shadow-lg animate-bounce z-20';
+                const schoolsHtml = nearest3.map((s, i) => {
+                    const distStr = s.dist > 1 ? s.dist.toFixed(1) + ' km' : Math.round(s.dist * 1000) + ' m';
+                    const name = s.name || 'Unnamed School';
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;gap:8px;">
+                        <span style="font-weight:600;color:#1e293b;font-size:12px;">${i + 1}. ${name}</span>
+                        <span style="color:#2563eb;font-weight:700;font-size:11px;white-space:nowrap;">${distStr}</span>
+                    </div>`;
+                }).join('');
 
-                nearestMarkerRef.current = new maplibregl.Marker({ element: el })
+                const popupHtml = `
+                    <div style="font-family:system-ui,sans-serif;min-width:220px;max-width:280px;">
+                        <div style="font-weight:700;font-size:13px;color:#1e293b;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Best Location Analysis</div>
+                        <div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Nearest Schools</div>
+                        ${schoolsHtml}
+                        <div style="margin-top:10px;background:#eff6ff;border-radius:6px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-size:11px;color:#64748b;font-weight:600;">Accessibility Score</span>
+                            <span style="font-weight:700;font-size:13px;color:${scoreBadgeColor};">${score.toFixed(1)}/10 &nbsp;<span style="font-size:11px;">${scoreLabel}</span></span>
+                        </div>
+                    </div>`;
+
+                nearestPopupRef.current = new maplibregl.Popup({
+                    closeButton: true,
+                    closeOnClick: false,
+                    offset: 20,
+                    maxWidth: '300px'
+                })
                     .setLngLat([lng, lat])
+                    .setHTML(popupHtml)
                     .addTo(map.current);
+
+                // Force z-index above everything
+                setTimeout(() => {
+                    const el = nearestPopupRef.current && nearestPopupRef.current.getElement();
+                    if (el) el.style.zIndex = '9999';
+                }, 0);
                 return;
             }
 
-            if (activeMode === 'default') {
+            if (mode === 'default') {
                 const centerPt = turf.point([lng, lat]);
                 let nearest = null;
                 let minDistance = Infinity;
                 let nearbyCount = 0;
 
-                for (const s of data) {
+                for (const s of currentData) {
                     const dist = turf.distance(centerPt, turf.point([s.lon, s.lat]), { units: 'kilometers' });
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        nearest = s;
-                    }
+                    if (dist < minDistance) { minDistance = dist; nearest = s; }
                     if (dist <= 1) nearbyCount++;
                 }
 
@@ -378,7 +443,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                     let densityColor = nearbyCount > 5 ? 'bg-red-100 text-red-700' : nearbyCount > 2 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
 
                     const el = document.createElement('div');
-                    el.className = 'w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-md animate-pulse z-20';
+                    el.className = 'w-3 h-3 bg-blue-600 rounded-full border-2 border-white shadow-md animate-pulse z-0';
 
                     nearestMarkerRef.current = new maplibregl.Marker({ element: el })
                         .setLngLat([lng, lat])
@@ -402,18 +467,20 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                             </div>
                         `)
                         .addTo(map.current);
+
+                    // Force the maplibre popup container to overlap absolutely everything else
+                    if (nearestPopupRef.current.getElement()) {
+                        nearestPopupRef.current.getElement().style.zIndex = '50';
+                    }
                 }
             }
         };
 
         map.current.on('click', handleMapClick);
-
-        return () => {
-            if (map.current) {
-                map.current.off('click', handleMapClick);
-            }
-        };
-    }, [data, activeMode, modeState, setModeState, onMapClick]);
+        return () => { if (map.current) map.current.off('click', handleMapClick); };
+        // Register only once — reads fresh values via refs
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [map.current]);
 
     // Measure Visualization
     useEffect(() => {
