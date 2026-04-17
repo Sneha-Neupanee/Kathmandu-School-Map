@@ -19,7 +19,7 @@ export default function Stats({ stats, filteredCount }) {
                 {/* Named Schools */}
                 <StatCard
                     title="Named"
-                    value={stats.named.toLocaleString()}
+                    value={`${stats.named.toLocaleString()} (${stats.total > 0 ? ((stats.named / stats.total) * 100).toFixed(1) : 0}%)`}
                     icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />}
                     className="bg-emerald-50 border-emerald-100"
                 />
@@ -27,7 +27,7 @@ export default function Stats({ stats, filteredCount }) {
                 {/* Unnamed Schools */}
                 <StatCard
                     title="Unnamed"
-                    value={stats.unnamed.toLocaleString()}
+                    value={`${stats.unnamed.toLocaleString()} (${stats.total > 0 ? ((stats.unnamed / stats.total) * 100).toFixed(1) : 0}%)`}
                     icon={<FileQuestion className="w-4 h-4 text-amber-500" />}
                     className="bg-amber-50 border-amber-100"
                 />

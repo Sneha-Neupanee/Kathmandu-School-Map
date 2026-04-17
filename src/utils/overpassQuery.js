@@ -1,10 +1,10 @@
-export const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+export const OVERPASS_URL = 'https://overpass.kumi.systems/api/interpreter';
 
 export const KATHMANDU_SCHOOLS_QUERY = `
 [out:json];
 (
-  node["amenity"="school"](27.6,85.2,27.8,85.4);
-  way["amenity"="school"](27.6,85.2,27.8,85.4);
+  node["amenity"="school"](27.65,85.28,27.75,85.36);
+  way["amenity"="school"](27.65,85.28,27.75,85.36);
 );
 out center;
 `;
@@ -33,11 +33,17 @@ export async function fetchSchools(retries = 2, timeoutMs = 15000) {
             return await response.json();
         } catch (error) {
             clearTimeout(timeoutId);
+
+            if (error.name === 'AbortError') {
+                console.warn('Request aborted (timeout or re-render). Ignoring safely.');
+                return null;
+            }
+
             console.warn(`Fetch attempt ${i + 1} failed:`, error.message);
 
             if (i === retries) {
                 console.error("Failed to fetch from Overpass API after all retries:", error);
-                throw new Error(error.name === 'AbortError' ? 'Request timed out. Please try again.' : error.message);
+                throw new Error('Server is busy (Overpass API). Please retry.');
             }
 
             // wait 2 seconds before retrying

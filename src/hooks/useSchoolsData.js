@@ -15,8 +15,22 @@ export function useSchoolsData() {
         setIsLoading(true);
         setError(null);
         try {
+            const cached = localStorage.getItem("schoolsData");
+
+            if (cached) {
+                setData(JSON.parse(cached));
+                setIsLoading(false);
+                return;
+            }
+
             const rawData = await fetchSchools();
+            if (!rawData) {
+                setIsLoading(false);
+                return;
+            }
             const formattedData = formatSchoolData(rawData);
+
+            localStorage.setItem("schoolsData", JSON.stringify(formattedData));
             setData(formattedData);
         } catch (err) {
             setError(err.message || "An unknown error occurred while fetching data.");
@@ -31,9 +45,13 @@ export function useSchoolsData() {
 
     const filteredData = useMemo(() => {
         return data.filter(school => {
-            // Name filter
+            // Filter by type
             if (filterType === 'named' && !school.isNamed) return false;
             if (filterType === 'unnamed' && school.isNamed) return false;
+            if (filterType === 'private' && school.schoolType !== 'private') return false;
+            if (filterType === 'public' && school.schoolType !== 'public') return false;
+            if (filterType === 'community' && school.schoolType !== 'community') return false;
+            if (filterType === 'unknown' && school.schoolType !== 'unknown') return false;
 
             // Search filter
             if (searchTerm) {
@@ -50,8 +68,20 @@ export function useSchoolsData() {
         const total = data.length;
         const named = data.filter(s => s.isNamed).length;
         const unnamed = total - named;
+        const privateCount = data.filter(s => s.schoolType === 'private').length;
+        const publicCount = data.filter(s => s.schoolType === 'public').length;
+        const communityCount = data.filter(s => s.schoolType === 'community').length;
+        const unknownCount = data.filter(s => s.schoolType === 'unknown').length;
 
-        return { total, named, unnamed };
+        return {
+            total,
+            named,
+            unnamed,
+            private: privateCount,
+            public: publicCount,
+            community: communityCount,
+            unknown: unknownCount
+        };
     }, [data]);
 
     return {

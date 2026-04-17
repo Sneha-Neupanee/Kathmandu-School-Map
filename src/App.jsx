@@ -1,7 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useSchoolsData } from './hooks/useSchoolsData';
 import Map from './components/Map';
 import Sidebar from './components/Sidebar';
+import SchoolDetails from './components/SchoolDetails';
+import Toolbar from './components/Toolbar';
+import ComparisonPanel from './components/ComparisonPanel';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 function App() {
@@ -18,6 +21,11 @@ function App() {
   } = useSchoolsData();
 
   const handleFlyToRef = useRef(null); // Ref to hold FlyTo function from Map
+  const [selectedSchool, setSelectedSchool] = useState(null);
+  const [activeMode, setActiveMode] = useState('default'); // Modes for toolbar
+
+  const [comparisonSchools, setComparisonSchools] = useState([]);
+  const [compareRefPoint, setCompareRefPoint] = useState(null);
 
   return (
     <div className="flex h-screen w-full bg-slate-50 overflow-hidden font-sans">
@@ -32,8 +40,17 @@ function App() {
           setFilterType={setFilterType}
           filteredCount={filteredData.length}
           onSchoolSelect={(school) => {
-            if (handleFlyToRef.current) {
-              handleFlyToRef.current(school);
+            if (activeMode === 'compare') {
+              setComparisonSchools(prev => {
+                if (prev.find(s => s.id === school.id)) return prev.filter(s => s.id !== school.id);
+                if (prev.length < 3) return [...prev, school];
+                return prev;
+              });
+            } else {
+              setSelectedSchool(school);
+              if (handleFlyToRef.current) {
+                handleFlyToRef.current(school);
+              }
             }
           }}
           schools={filteredData}
@@ -42,6 +59,9 @@ function App() {
 
       {/* Main Content Area */}
       <div className="flex-1 relative flex flex-col">
+        {/* Toolbar */}
+        <Toolbar activeMode={activeMode} setActiveMode={setActiveMode} />
+
         {/* Loading overlay */}
         {isLoading && (
           <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
@@ -72,7 +92,42 @@ function App() {
         <Map
           data={filteredData}
           registerFlyTo={(flyToFn) => { handleFlyToRef.current = flyToFn; }}
+          onSchoolSelect={(school) => {
+            if (activeMode === 'compare') {
+              setComparisonSchools(prev => {
+                if (prev.find(s => s.id === school.id)) return prev.filter(s => s.id !== school.id);
+                if (prev.length < 3) return [...prev, school];
+                return prev;
+              });
+            } else {
+              setSelectedSchool(school);
+              if (handleFlyToRef.current) {
+                handleFlyToRef.current(school);
+              }
+            }
+          }}
+          onMapClick={(point) => {
+            if (activeMode === 'compare') setCompareRefPoint(point);
+          }}
+          activeMode={activeMode}
         />
+
+        {/* Selected School Details Modal/Overlay */}
+        {selectedSchool && activeMode !== 'compare' && (
+          <div className="absolute top-4 left-4 z-20 w-80 max-h-[calc(100vh-2rem)] flex flex-col pointer-events-none">
+            <SchoolDetails school={selectedSchool} onClose={() => setSelectedSchool(null)} />
+          </div>
+        )}
+
+        {/* Comparison Panel */}
+        {activeMode === 'compare' && (
+          <ComparisonPanel
+            schools={comparisonSchools}
+            referencePoint={compareRefPoint}
+            onRemove={(id) => setComparisonSchools(prev => prev.filter(s => s.id !== id))}
+            onClose={() => setActiveMode('default')}
+          />
+        )}
 
       </div>
     </div>

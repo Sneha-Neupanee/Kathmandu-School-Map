@@ -16,6 +16,21 @@ export function formatSchoolData(rawData) {
             const name = tags.name || "Unnamed School";
             const isNamed = !!tags.name;
 
+            // Derive schoolType
+            const operator = (tags.operator || "").toLowerCase();
+            const operatorType = (tags['operator:type'] || "").toLowerCase();
+            const ownership = (tags.ownership || "").toLowerCase();
+            const combinedTags = `${operator} ${operatorType} ${ownership}`;
+
+            let schoolType = "unknown";
+            if (combinedTags.includes('private') || combinedTags.includes('ngo')) {
+                schoolType = "private";
+            } else if (combinedTags.includes('public') || combinedTags.includes('government') || combinedTags.includes('gov')) {
+                schoolType = "public";
+            } else if (combinedTags.includes('community')) {
+                schoolType = "community";
+            }
+
             return {
                 id: element.id,
                 name,
@@ -23,6 +38,11 @@ export function formatSchoolData(rawData) {
                 lat,
                 lon,
                 type: element.type,
+                schoolType, // Added
+                phone: tags.phone || null,
+                website: tags.website || null,
+                address: tags['addr:street'] || null,
+                operator: tags.operator || null,
                 tags
             };
         })

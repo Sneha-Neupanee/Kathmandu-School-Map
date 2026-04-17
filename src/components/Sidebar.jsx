@@ -3,6 +3,7 @@ import SearchBar from './SearchBar';
 import Stats from './Stats';
 import Charts from './Charts';
 import { School, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Sidebar({
     stats,
@@ -18,13 +19,16 @@ export default function Sidebar({
         <div className="flex flex-col h-full bg-white z-20 relative">
             <div className="p-5 border-b border-slate-100 flex-shrink-0 bg-white">
                 <div className="flex items-center space-x-3 mb-1">
-                    <div className="bg-blue-600 p-2 rounded-lg shadow-sm">
+                    <div className="bg-blue-600 p-2 rounded-lg shadow-sm flex-shrink-0">
                         <School className="w-6 h-6 text-white" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                         <h1 className="text-xl font-bold text-slate-800 tracking-tight">KTM Schools</h1>
                         <p className="text-xs text-slate-500 font-medium">Intelligence Dashboard</p>
                     </div>
+                    <Link to="/dashboard" className="text-xs font-bold bg-slate-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors shadow-sm ml-auto" title="Go to Analytics">
+                        Analytics
+                    </Link>
                 </div>
             </div>
 
@@ -38,22 +42,14 @@ export default function Sidebar({
                         <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">
                             Filter Schools
                         </label>
-                        <div className="flex bg-slate-100 p-1 rounded-lg">
-                            <FilterTab
-                                active={filterType === 'all'}
-                                onClick={() => setFilterType('all')}
-                                label="All"
-                            />
-                            <FilterTab
-                                active={filterType === 'named'}
-                                onClick={() => setFilterType('named')}
-                                label="Named"
-                            />
-                            <FilterTab
-                                active={filterType === 'unnamed'}
-                                onClick={() => setFilterType('unnamed')}
-                                label="Unnamed"
-                            />
+                        <div className="flex flex-wrap gap-2">
+                            <FilterChip active={filterType === 'all'} onClick={() => setFilterType('all')} label="All" count={stats.total} percentage={100} />
+                            <FilterChip active={filterType === 'named'} onClick={() => setFilterType('named')} label="Named" count={stats.named} percentage={stats.total ? (stats.named / stats.total * 100) : 0} />
+                            <FilterChip active={filterType === 'unnamed'} onClick={() => setFilterType('unnamed')} label="Unnamed" count={stats.unnamed} percentage={stats.total ? (stats.unnamed / stats.total * 100) : 0} />
+                            <FilterChip active={filterType === 'private'} onClick={() => setFilterType('private')} label="Private" count={stats.private || 0} percentage={stats.total && stats.private ? (stats.private / stats.total * 100) : 0} />
+                            <FilterChip active={filterType === 'public'} onClick={() => setFilterType('public')} label="Public" count={stats.public || 0} percentage={stats.total && stats.public ? (stats.public / stats.total * 100) : 0} />
+                            <FilterChip active={filterType === 'community'} onClick={() => setFilterType('community')} label="Community" count={stats.community || 0} percentage={stats.total && stats.community ? (stats.community / stats.total * 100) : 0} />
+                            <FilterChip active={filterType === 'unknown'} onClick={() => setFilterType('unknown')} label="Unknown" count={stats.unknown || 0} percentage={stats.total && stats.unknown ? (stats.unknown / stats.total * 100) : 0} />
                         </div>
                     </div>
                 </div>
@@ -101,17 +97,20 @@ export default function Sidebar({
         </div>
     );
 }
-
-function FilterTab({ active, onClick, label }) {
+function FilterChip({ active, onClick, label, count, percentage }) {
     return (
         <button
             onClick={onClick}
-            className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-all ${active
-                    ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/50'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+            className={`flex items-center space-x-2 py-1.5 px-3 text-sm font-medium rounded-full border transition-all ${active
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                 }`}
+            title={`${count} schools (${percentage ? percentage.toFixed(1) : 0}%)`}
         >
-            {label}
+            <span>{label}</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${active ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                {count}
+            </span>
         </button>
     );
 }
