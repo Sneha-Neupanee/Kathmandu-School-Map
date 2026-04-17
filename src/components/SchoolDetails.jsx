@@ -5,7 +5,7 @@ export default function SchoolDetails({ school, onClose }) {
     if (!school) return null;
 
     return (
-        <div className="bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden flex flex-col h-full relative pointer-events-auto">
+        <div className="bg-slate-50 rounded-lg shadow-xl border border-slate-400 overflow-hidden flex flex-col h-full relative pointer-events-auto">
             <button
                 onClick={onClose}
                 className="absolute top-3 right-3 p-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
@@ -13,7 +13,7 @@ export default function SchoolDetails({ school, onClose }) {
             >
                 <X className="w-5 h-5" />
             </button>
-            <div className="p-5 border-b border-slate-100 bg-slate-50">
+            <div className="p-5 border-b border-slate-300 bg-slate-100">
                 <h2 className="text-xl font-bold text-slate-800 pr-8">{school.name}</h2>
                 {school.type && (
                     <span className="inline-block mt-2 text-xs font-medium px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full capitalize">

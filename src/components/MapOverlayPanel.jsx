@@ -22,8 +22,8 @@ export default function MapOverlayPanel({
         <div className="absolute bottom-6 left-4 z-[40] w-80 max-h-[60vh] flex flex-col pointer-events-none">
             {/* Main overlay panel for measure, analyze, bestLocation, and Compare selection */}
             {(!showComparePanel) && (
-                <div className="bg-white shadow-xl border border-slate-200 rounded-xl p-4 flex flex-col pointer-events-auto overflow-hidden">
-                    <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
+                <div className="bg-slate-50 shadow-xl border border-slate-400 rounded-xl p-4 flex flex-col pointer-events-auto overflow-hidden">
+                    <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-300">
                         <h3 className="font-bold text-slate-800 text-sm tracking-tight">
                             {activeMode === 'measure' && 'Measure Distance'}
                             {activeMode === 'analyze' && 'Analyze Area'}
@@ -32,7 +32,7 @@ export default function MapOverlayPanel({
                         </h3>
                         <button
                             onClick={handleExit}
-                            className="text-[10px] uppercase font-bold text-slate-500 hover:text-red-500 bg-slate-50 border border-slate-200 rounded px-2 py-0.5 shadow-sm transition-colors"
+                            className="text-[10px] uppercase font-bold text-slate-500 hover:text-red-500 bg-slate-100 border border-slate-400 rounded px-2 py-0.5 shadow-sm transition-colors"
                         >
                             Exit Mode
                         </button>
@@ -45,7 +45,7 @@ export default function MapOverlayPanel({
                                     <p className="text-xs text-slate-600">Click two points on the map to calculate distance.</p>
                                 </div>
                                 {modeState.measure.start && modeState.measure.end ? (
-                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex justify-between items-center">
+                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-300 flex justify-between items-center">
                                         <span className="font-semibold text-blue-800">Distance:</span>
                                         <span className="font-bold text-xl text-blue-700">{modeState.measure.distance.toFixed(2)} km</span>
                                     </div>
@@ -83,7 +83,7 @@ export default function MapOverlayPanel({
                                             />
                                         </div>
                                         {modeState.analyze.stats && (
-                                            <div className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
+                                            <div className="text-sm text-slate-700 bg-slate-100 p-3 rounded-lg border border-slate-300 space-y-2">
                                                 <p className="flex justify-between items-center text-xs">Total Schools: <span className="font-bold text-lg text-slate-800">{modeState.analyze.stats.total}</span></p>
                                                 <p className="flex justify-between items-center text-xs">
                                                     Density:
@@ -92,7 +92,7 @@ export default function MapOverlayPanel({
                                                         <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded text-white shadow-sm ${modeState.analyze.stats.densityLabel === 'High' ? 'bg-red-500' : modeState.analyze.stats.densityLabel === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'}`}>{modeState.analyze.stats.densityLabel}</span>
                                                     </span>
                                                 </p>
-                                                <div className="pt-2 mt-1 border-t border-slate-200 text-xs flex flex-col gap-1 font-medium">
+                                                <div className="pt-2 mt-1 border-t border-slate-400 text-xs flex flex-col gap-1 font-medium">
                                                     <span className="text-slate-500 flex justify-between">Public Schools: <b className="text-slate-800">{modeState.analyze.stats.public}</b></span>
                                                     <span className="text-slate-500 flex justify-between">Private Schools: <b className="text-slate-800">{modeState.analyze.stats.private}</b></span>
                                                     <span className="text-slate-500 flex justify-between">Community Schools: <b className="text-slate-800">{modeState.analyze.stats.community}</b></span>
@@ -121,8 +121,8 @@ export default function MapOverlayPanel({
                                         <li className="flex gap-2"><span className="font-bold text-blue-600">3.</span>Click <b>Compare Now</b> to view comparison.</li>
                                     </ol>
                                 </div>
-                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                                    <div className="flex justify-between items-center mb-2 pb-1 border-b border-slate-100">
+                                <div className="bg-slate-100 border border-slate-400 rounded-lg p-3">
+                                    <div className="flex justify-between items-center mb-2 pb-1 border-b border-slate-300">
                                         <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                                             Selection (<span className="text-blue-600">{comparisonSchools.length}/3</span>)
                                         </p>
@@ -136,7 +136,7 @@ export default function MapOverlayPanel({
                                     {comparisonSchools.length > 0 ? (
                                         <ul className="space-y-1.5 mb-3">
                                             {comparisonSchools.map(s => (
-                                                <li key={s.id} className="text-xs bg-white border border-slate-100 p-1.5 rounded flex justify-between items-center">
+                                                <li key={s.id} className="text-xs bg-slate-50 border border-slate-300 p-1.5 rounded flex justify-between items-center">
                                                     <span className="truncate font-medium text-slate-700">{s.name}</span>
                                                     <button onClick={() => setComparisonSchools(prev => prev.filter(sc => sc.id !== s.id))} className="text-slate-400 hover:text-red-500 pl-2">
                                                         ×

@@ -28,7 +28,7 @@ export default function SearchBar({ searchTerm, onSearch, exactMatchAction }) {
     };
 
     return (
-        <div className="relative flex items-center border border-slate-300 rounded-lg bg-slate-50 transition-all shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+        <div className="relative flex items-center border border-slate-300 rounded-lg bg-slate-100 transition-all shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
             <input
                 type="text"
                 className="block w-full pl-3 pr-20 py-2.5 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
@@ -51,7 +51,7 @@ export default function SearchBar({ searchTerm, onSearch, exactMatchAction }) {
             )}
             <button
                 onClick={handleSearchClick}
-                className="absolute inset-y-0 right-0 px-3 flex items-center bg-slate-100 text-blue-600 rounded-r-lg border-l border-slate-200 hover:bg-blue-50 transition-colors"
+                className="absolute inset-y-0 right-0 px-3 flex items-center bg-slate-100 text-blue-600 rounded-r-lg border-l border-slate-400 hover:bg-blue-50 transition-colors"
                 title="Search"
             >
                 <Search className="h-4 w-4" />

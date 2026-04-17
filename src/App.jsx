@@ -6,7 +6,7 @@ import SchoolDetails from './components/SchoolDetails';
 import Toolbar from './components/Toolbar';
 import MapOverlayPanel from './components/MapOverlayPanel';
 import ComparisonPanel from './components/ComparisonPanel';
-import { Loader2, AlertCircle, Moon, Sun } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
 
 function App() {
@@ -27,13 +27,6 @@ function App() {
   const handleFlyToLocationRef = useRef(null); // Exposed from Map for location search
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [activeMode, setActiveMode] = useState('default');
-
-  const handleLocationFound = ({ lat, lng, name }) => {
-    // Fly to location
-    if (handleFlyToLocationRef.current) handleFlyToLocationRef.current({ lat, lng });
-    // If in compare mode, use this as the reference point
-    if (activeMode === 'compare') setCompareRefPoint({ lat, lng });
-  };
 
   const [comparisonSchools, setComparisonSchools] = useState([]);
   const [compareRefPoint, setCompareRefPoint] = useState(null);
@@ -76,24 +69,15 @@ function App() {
     });
   }, [activeMode]);
 
-  const [isDarkMode, setIsDarkMode] = useState(false); // default LIGHT mode
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-
   // Map view state (lifted up so Toolbar can control them)
   const [mapStyle, setMapStyle] = useState('light');
   const [viewMode, setViewMode] = useState('markers');
 
   return (
-    <div className={`flex h-screen w-full transition-colors duration-300 overflow-hidden font-sans ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+    <div className="flex h-screen w-full overflow-hidden font-sans bg-[#f5f6f8] text-black">
 
       {/* Sidebar */}
-      <div className="w-full md:w-80 lg:w-96 flex-shrink-0 z-10 shadow-xl border-r border-slate-200">
+      <div className="w-full md:w-80 lg:w-96 flex-shrink-0 z-10 shadow-[10px_0_40px_rgb(0,0,0,0.08)] border-r border-slate-200/60 relative">
         <Sidebar
           stats={stats}
           searchTerm={searchTerm}
@@ -139,21 +123,10 @@ function App() {
             const next = mapStyle === 'light' ? 'satellite' : 'light';
             setMapStyle(next);
           }}
-          onLocationFound={handleLocationFound}
         />
 
-        {/* Theme toggle — anchored top-right, shifted left from map controls */}
-        <div className="absolute top-3 right-16 z-20">
-          <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2 rounded-full bg-white shadow-md border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-        </div>
         {isLoading && (
-          <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
+          <div className="absolute inset-0 z-50 bg-slate-50/80 backdrop-blur-sm flex flex-col items-center justify-center">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
             <h2 className="text-xl font-semibold text-slate-800">Loading Geographic Data</h2>
             <p className="text-slate-500 mt-2">Fetching schools from OpenStreetMap...</p>
@@ -162,7 +135,7 @@ function App() {
 
         {/* Error overlay */}
         {error && !isLoading && (
-          <div className="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 text-center">
+          <div className="absolute inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Data Fetch Error</h2>
             <p className="text-red-600 bg-red-50 p-4 rounded-lg border border-red-100 max-w-lg mb-6">

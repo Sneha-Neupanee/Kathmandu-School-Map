@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from 'recharts';
 import { Lightbulb } from 'lucide-react';
 
@@ -7,6 +7,7 @@ import { Lightbulb } from 'lucide-react';
    Works in both light and dark contexts.
 ───────────────────────────────────────────── */
 const themeStyle = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Lora:wght@500;600&display=swap');
   @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap');
 
   .charts-root {
@@ -25,6 +26,8 @@ const themeStyle = `
     --pct-badge-border: #e2e8f0;
     --pct-badge-text: #334155;
     --legend-dot-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    --row-bg: rgba(241, 245, 249, 0.4);
+    --row-border: #e2e8f0;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -44,6 +47,8 @@ const themeStyle = `
       --pct-badge-border: #334155;
       --pct-badge-text: #94a3b8;
       --legend-dot-shadow: 0 2px 8px rgba(0,0,0,0.45);
+      --row-bg: rgba(30, 41, 59, 0.4);
+      --row-border: #334155;
     }
   }
 
@@ -85,67 +90,21 @@ const themeStyle = `
     margin-top: 1px;
   }
 
-  .charts-root .legend-row {
+  .charts-root .panel-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 5px 0;
-    cursor: default;
-    border-radius: 8px;
-    transition: background 0.15s;
-  }
-  .charts-root .legend-row:hover {
-    background: var(--pct-badge-bg);
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
   }
 
   .charts-root .legend-dot {
-    width: 11px;
-    height: 11px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     flex-shrink: 0;
     box-shadow: var(--legend-dot-shadow);
-  }
-
-  .charts-root .legend-name {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--text-main);
-    flex: 1;
-  }
-
-  .charts-root .legend-pct {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: var(--pct-badge-text);
-    background: var(--pct-badge-bg);
-    border: 1px solid var(--pct-badge-border);
-    padding: 1px 7px;
-    border-radius: 20px;
-    min-width: 44px;
-    text-align: center;
-  }
-
-  .charts-root .legend-count {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.78rem;
-    color: var(--label-color);
-    min-width: 30px;
-    text-align: right;
-  }
-
-  .charts-root .center-label-val {
-    font-family: 'DM Serif Display', Georgia, serif;
-    font-size: 1.6rem;
-    fill: var(--heading-color, #0f172a);
-  }
-  .charts-root .center-label-sub {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.65rem;
-    fill: var(--label-color, #64748b);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 
   .charts-root .insight-box {
@@ -195,45 +154,41 @@ function ActiveShape3D({ palette }) {
   return function renderActiveShape(props) {
     const {
       cx, cy, innerRadius, outerRadius,
-      startAngle, endAngle, fill,
-      payload, percent, value,
+      startAngle, endAngle, payload
     } = props;
 
-    const idx = palette.findIndex(p => p.base === fill);
-    const colors = palette[idx] || { base: fill, light: fill, dark: fill };
+    // Depend on payload.fill which is the raw un-gradiented original color
+    const colors = palette.find(p => p.base === payload.fill) || palette[0];
+
+    // Exponential growth scale
+    const scale = 1.35;
 
     return (
       <g>
-        {/* Outer glow ring */}
+        {/* BACKGROUND SHADOW (depth illusion) */}
         <Sector
-          cx={cx} cy={cy}
-          innerRadius={outerRadius + 4}
-          outerRadius={outerRadius + 8}
+          cx={cx}
+          cy={cy}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius}
           startAngle={startAngle}
           endAngle={endAngle}
-          fill={colors.light}
-          opacity={0.35}
+          fill="#00000020"
         />
-        {/* Main lifted segment */}
-        <Sector
-          cx={cx} cy={cy}
-          innerRadius={innerRadius - 2}
-          outerRadius={outerRadius + 10}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          fill={colors.base}
-          style={{ filter: `drop-shadow(0 4px 10px ${colors.base}88)` }}
-        />
-        {/* Highlight rim for 3-D illusion */}
-        <Sector
-          cx={cx} cy={cy}
-          innerRadius={outerRadius + 2}
-          outerRadius={outerRadius + 4}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          fill={colors.light}
-          opacity={0.7}
-        />
+
+        {/* MAIN ACTIVE SLICE (SCALED VISUALLY) */}
+        <g transform={`scale(${scale})`}>
+          <Sector
+            cx={cx / scale}
+            cy={cy / scale}
+            innerRadius={innerRadius}
+            outerRadius={outerRadius}
+            startAngle={startAngle}
+            endAngle={endAngle}
+            fill={colors.dark}
+            style={{ filter: `drop-shadow(0 6px 16px ${colors.base}88)` }}
+          />
+        </g>
       </g>
     );
   };
@@ -242,30 +197,44 @@ function ActiveShape3D({ palette }) {
 /* ─────────────────────────────────────────────
    Center label inside donut
 ───────────────────────────────────────────── */
-function CenterLabel({ viewBox, total, label }) {
-  const { cx, cy } = viewBox;
+function CustomCenterLabel({ activeEntry, total }) {
+  if (!activeEntry) return null;
+
+  const pct = total > 0 ? ((activeEntry.value / total) * 100).toFixed(1) : '0.0';
+
   return (
-    <g>
-      <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle" className="center-label-val" style={{ fontFamily: '"DM Serif Display", Georgia, serif', fontSize: '1.45rem', fill: 'currentColor' }}>
-        {total}
-      </text>
-      <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: '"DM Sans", sans-serif', fontSize: '0.6rem', fill: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {label}
-      </text>
-    </g>
+    <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle">
+      <tspan x="50%" dy="-10" style={{ fontFamily: '"Sora", sans-serif', fontSize: '1.6rem', fontWeight: 700, fill: 'var(--heading-color, #0f172a)' }}>
+        {pct}%
+      </tspan>
+      <tspan x="50%" dy="22" style={{ fontFamily: '"DM Sans", sans-serif', fontSize: '0.65rem', fill: 'var(--label-color, #64748b)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        {activeEntry.name}
+      </tspan>
+      <tspan x="50%" dy="16" style={{ fontFamily: '"DM Sans", sans-serif', fontSize: '0.75rem', fill: 'var(--label-color, #64748b)' }}>
+        {activeEntry.value.toLocaleString()} schools
+      </tspan>
+    </text>
   );
 }
 
 /* ─────────────────────────────────────────────
    Reusable DonutChart
 ───────────────────────────────────────────── */
-function DonutChart({ data, palette, total, centerLabel }) {
-  const [activeIndex, setActiveIndex] = useState(null);
-  const activeShape = useCallback(ActiveShape3D({ palette }), [palette]);
+function DonutChart({ data, palette, total }) {
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  // Build gradient defs for 3-D look
+  useEffect(() => {
+    if (!data || data.length === 0) return;
+    const interval = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % data.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [data]);
+
+  const activeShape = useMemo(() => ActiveShape3D({ palette }), [palette]);
+
   const gradientDefs = palette.map((p, i) => (
-    <radialGradient key={i} id={`grad-${i}`} cx="40%" cy="35%" r="65%">
+    <radialGradient key={i} id={`grad-${p.base.replace('#', '')}`} cx="40%" cy="35%" r="65%">
       <stop offset="0%" stopColor={p.light} />
       <stop offset="60%" stopColor={p.base} />
       <stop offset="100%" stopColor={p.dark} />
@@ -275,69 +244,103 @@ function DonutChart({ data, palette, total, centerLabel }) {
   const coloredData = data.map((d, i) => ({
     ...d,
     fill: palette[i % palette.length].base,
-    gradientFill: `url(#grad-${i})`,
+    gradientFill: `url(#grad-${palette[i % palette.length].base.replace('#', '')})`,
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={190}>
-      <PieChart>
-        <defs>{gradientDefs}</defs>
-        <Pie
-          data={coloredData}
-          cx="50%" cy="50%"
-          innerRadius={54}
-          outerRadius={78}
-          paddingAngle={4}
-          dataKey="value"
-          stroke="none"
-          activeIndex={activeIndex}
-          activeShape={activeShape}
-          onMouseEnter={(_, i) => setActiveIndex(i)}
-          onMouseLeave={() => setActiveIndex(null)}
-          startAngle={90}
-          endAngle={-270}
-        >
-          {coloredData.map((entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={entry.gradientFill}
-              style={{
-                filter: activeIndex === index
-                  ? `drop-shadow(0 0 8px ${palette[index % palette.length].base}66)`
-                  : 'none',
-                transition: 'filter 0.2s',
-                cursor: 'pointer',
-              }}
-            />
-          ))}
-        </Pie>
-        <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle"
-          style={{ fontFamily: '"DM Serif Display", Georgia, serif', fontSize: '1.5rem', fill: '#64748b' }}>
-          {/* recharts doesn't support dynamic text in label well here; handled via labelList */}
-        </text>
-      </PieChart>
-    </ResponsiveContainer>
-  );
-}
+    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '20px' }}>
+      {/* ── Left Side: Category Details Panel ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '20px' }}>
+        {coloredData.map((entry, i) => {
+          const isActive = i === activeIndex;
+          const color = palette[i % palette.length].base;
+          const pct = total > 0 ? ((entry.value / total) * 100).toFixed(1) : '0.0';
 
-/* ─────────────────────────────────────────────
-   Legend strip
-───────────────────────────────────────────── */
-function Legend({ data, palette, total }) {
-  return (
-    <div style={{ padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {data.map((entry, i) => {
-        const pct = total > 0 ? ((entry.value / total) * 100).toFixed(1) : '0.0';
-        const color = palette[i % palette.length].base;
-        return (
-          <div key={i} className="legend-row" style={{ padding: '5px 8px' }}>
-            <span className="legend-dot" style={{ background: color }} />
-            <span className="legend-name">{entry.name}</span>
-            <span className="legend-count">{entry.value.toLocaleString()}</span>
-            <span className="legend-pct">{pct}%</span>
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={i}
+              className="panel-row"
+              style={{
+                background: isActive ? `${color}10` : 'var(--row-bg)',
+                border: `1px solid ${isActive ? color + '60' : 'var(--row-border)'}`,
+                boxShadow: isActive ? `0 1px 5px ${color}55` : 'none',
+              }}
+            >
+              <span className="legend-dot" style={{ background: color }} />
+              <span style={{
+                fontFamily: '"DM Sans", sans-serif',
+                fontSize: '0.85rem',
+                flex: 1,
+                color: isActive ? color : 'var(--text-main)',
+                fontWeight: isActive ? 700 : 500,
+              }}>
+                {entry.name}
+              </span>
+              <span style={{
+                fontFamily: '"DM Sans", sans-serif',
+                fontSize: '0.8rem',
+                color: isActive ? color : 'var(--label-color)',
+                fontWeight: isActive ? 600 : 400,
+                textAlign: 'right'
+              }}>
+                {entry.value.toLocaleString()}
+              </span>
+              <span style={{
+                fontFamily: '"Sora", sans-serif',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                color: isActive ? color : 'var(--pct-badge-text)',
+                background: isActive ? `${color}18` : 'var(--pct-badge-bg)',
+                border: `1px solid ${isActive ? color + '40' : 'var(--pct-badge-border)'}`,
+                padding: '2px 8px',
+                borderRadius: '20px',
+                minWidth: '50px',
+                textAlign: 'center'
+              }}>
+                {pct}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Right Side: Chart Only ── */}
+      <div style={{ width: '220px', height: '220px', pointerEvents: 'none', flexShrink: 0 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <defs>{gradientDefs}</defs>
+            <Pie
+              data={coloredData}
+              cx="50%" cy="50%"
+              innerRadius={75}
+              outerRadius={105}
+              paddingAngle={4}
+              dataKey="value"
+              stroke="none"
+              activeIndex={activeIndex}
+              activeShape={activeShape}
+              startAngle={90}
+              endAngle={-270}
+            >
+              {coloredData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.gradientFill}
+                  style={{
+                    opacity: activeIndex === index ? 1 : 0.85,
+                    transform: activeIndex === index ? 'scale(1)' : 'scale(0.96)',
+                    transformOrigin: 'center',
+                    transition: 'all 0.3s ease'
+                  }}
+                />
+              ))}
+            </Pie>
+            <g>
+              <CustomCenterLabel viewBox={{ cx: '50%', cy: '50%' }} activeEntry={coloredData[activeIndex]} total={total} />
+            </g>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -374,15 +377,11 @@ export default function Charts({ stats }) {
         </div>
 
         {stats.total > 0 ? (
-          <>
-            <DonutChart
-              data={qualityData}
-              palette={QUALITY_PALETTE}
-              total={stats.total}
-              centerLabel="total"
-            />
-            <Legend data={qualityData} palette={QUALITY_PALETTE} total={stats.total} />
-          </>
+          <DonutChart
+            data={qualityData}
+            palette={QUALITY_PALETTE}
+            total={stats.total}
+          />
         ) : (
           <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--label-color)', fontFamily: '"DM Sans", sans-serif', fontSize: '0.85rem' }}>
             No data available
@@ -398,15 +397,11 @@ export default function Charts({ stats }) {
         </div>
 
         {ownershipData.length > 0 ? (
-          <>
-            <DonutChart
-              data={ownershipData}
-              palette={OWNERSHIP_PALETTE}
-              total={stats.total}
-              centerLabel="schools"
-            />
-            <Legend data={ownershipData} palette={OWNERSHIP_PALETTE} total={stats.total} />
-          </>
+          <DonutChart
+            data={ownershipData}
+            palette={OWNERSHIP_PALETTE}
+            total={stats.total}
+          />
         ) : (
           <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--label-color)', fontFamily: '"DM Sans", sans-serif', fontSize: '0.85rem' }}>
             No data available

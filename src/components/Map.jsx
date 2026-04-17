@@ -261,7 +261,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 const el = document.createElement('div');
 
                 if (isCluster) {
-                    let colorClass = pointCount > 30 ? 'bg-red-500 border-red-200' : pointCount > 10 ? 'bg-amber-500 border-amber-200 text-amber-950' : 'bg-blue-500 border-blue-200 text-white';
+                    let colorClass = pointCount > 30 ? 'bg-red-500 border-red-200' : pointCount > 10 ? 'bg-amber-500 border-amber-200 text-amber-950' : 'bg-blue-500 border-blue-400 text-white';
                     let sizeClass = pointCount > 30 ? 'w-10 h-10 text-sm' : pointCount > 10 ? 'w-8 h-8 text-xs' : 'w-7 h-7 text-[10px]';
 
                     el.className = `${sizeClass} ${colorClass} rounded-full border-[3px] flex items-center justify-center font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 z-0`;
@@ -287,7 +287,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                     const popupHtml = `
                         <div class="font-sans">
                         <h3 class="font-bold text-slate-800 text-base mb-1">${school.name}</h3>
-                        ${school.type ? `<p class="text-xs text-slate-500 mb-1 capitalize border border-slate-200 inline-block px-1.5 py-0.5 rounded-md bg-slate-50">Type: ${school.type}</p>` : ''}
+                        ${school.type ? `<p class="text-xs text-slate-500 mb-1 capitalize border border-slate-400 inline-block px-1.5 py-0.5 rounded-md bg-slate-100">Type: ${school.type}</p>` : ''}
                         </div>
                     `;
 
@@ -459,7 +459,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                                <p class="font-bold text-slate-800 text-sm mt-1 mb-0">${nearest.name}</p>
                                <p class="text-red-600 font-bold mb-2">${distanceStr} block distance</p>
                                
-                               <div class="bg-slate-50 p-1.5 rounded border border-slate-100">
+                               <div class="bg-slate-100 p-1.5 rounded border border-slate-300">
                                    <p class="text-[10px] text-slate-500 mb-1">Within 1km Radius:</p>
                                    <p class="font-bold"><span class="text-blue-600">${nearbyCount}</span> total schools</p>
                                    <span class="inline-block mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${densityColor}">${densityLevel}</span>
@@ -656,8 +656,8 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
 
             {/* Map Legend */}
             {viewMode !== 'heatmap' && (
-                <div className="absolute bottom-6 right-6 z-10 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-md border border-slate-200">
-                    <h4 className="text-[10px] uppercase font-bold text-slate-500 mb-2 border-b border-slate-100 pb-1">Map Legend</h4>
+                <div className="absolute bottom-6 right-6 z-10 bg-slate-50/90 backdrop-blur-sm p-3 rounded-lg shadow-md border border-slate-400">
+                    <h4 className="text-[10px] uppercase font-bold text-slate-500 mb-2 border-b border-slate-300 pb-1">Map Legend</h4>
                     <div className="space-y-2 text-[10px] text-slate-700 font-medium">
                         <div className="flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full bg-blue-600 border border-white shadow-sm inline-block"></span>
@@ -678,7 +678,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                             </div>
                         )}
                         {activeMode === 'analyze' && (
-                            <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                            <div className="flex items-center gap-2 pt-1 border-t border-slate-500">
                                 <span className="w-3 h-3 rounded-full bg-blue-500/20 border border-blue-600 inline-block"></span>
                                 Analysis Area
                             </div>
@@ -689,8 +689,8 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
 
             {/* Heatmap Legend */}
             {viewMode === 'heatmap' && (
-                <div className="absolute bottom-6 right-6 z-10 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-md border border-slate-200 w-60">
-                    <h4 className="font-bold text-slate-800 text-sm mb-2 border-b border-slate-100 pb-1">Heatmap Density</h4>
+                <div className="absolute bottom-6 right-6 z-10 bg-slate-50/90 backdrop-blur-sm p-4 rounded-xl shadow-md border border-slate-400 w-60">
+                    <h4 className="font-bold text-slate-800 text-sm mb-2 border-b border-slate-300 pb-1">Heatmap Density</h4>
                     <p className="text-[10px] text-slate-500 mb-2 font-medium">Shows school clustering density across Kathmandu.</p>
                     <div className="h-2 w-full rounded-full bg-gradient-to-r from-blue-300 via-green-400 to-red-500 mb-1 shadow-inner"></div>
                     <div className="flex justify-between text-[9px] uppercase tracking-widest text-slate-500 font-bold mt-1">
