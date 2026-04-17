@@ -40,12 +40,15 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick }) {
+function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool }) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const markersRef = useRef([]);
     const nearestPopupRef = useRef(null);
     const nearestMarkerRef = useRef(null);
+
+    const selectedPopupRef = useRef(null);
+    const selectedMarkerRef = useRef(null);
 
     const [mapStyle, setMapStyle] = useState('light');
     const [viewMode, setViewMode] = useState('markers'); // 'markers' or 'heatmap'
@@ -144,6 +147,49 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick }) {
             }
         };
     }, [clusterer]);
+
+    // Selected School effect
+    useEffect(() => {
+        if (!map.current) return;
+
+        if (selectedSchool) {
+            if (selectedMarkerRef.current) selectedMarkerRef.current.remove();
+            if (selectedPopupRef.current) selectedPopupRef.current.remove();
+
+            const el = document.createElement('div');
+            el.className = 'w-4 h-4 bg-green-500 rounded-full border-[2px] border-white shadow-lg animate-bounce pointer-events-none z-50';
+
+            const popupHtml = `
+                    <div class="font-sans text-center min-w-[100px] pointer-events-none">
+                       <h3 class="font-bold text-slate-800 text-sm mb-1">${selectedSchool.name}</h3>
+                       ${selectedSchool.type ? `<span class="text-[10px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded capitalize font-semibold shadow-sm">${selectedSchool.type}</span>` : ''}
+                    </div>
+            `;
+
+            selectedPopupRef.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 20 })
+                .setLngLat([selectedSchool.lon, selectedSchool.lat])
+                .setHTML(popupHtml);
+
+            selectedMarkerRef.current = new maplibregl.Marker({ element: el })
+                .setLngLat([selectedSchool.lon, selectedSchool.lat])
+                .setPopup(selectedPopupRef.current)
+                .addTo(map.current);
+
+            // show popup immediately
+            selectedMarkerRef.current.togglePopup();
+
+        } else {
+            if (selectedMarkerRef.current) selectedMarkerRef.current.remove();
+            if (selectedPopupRef.current) selectedPopupRef.current.remove();
+            selectedMarkerRef.current = null;
+            selectedPopupRef.current = null;
+        }
+
+        return () => {
+            if (selectedMarkerRef.current) selectedMarkerRef.current.remove();
+            if (selectedPopupRef.current) selectedPopupRef.current.remove();
+        }
+    }, [selectedSchool]);
 
     // Sync Markers and click listener
     useEffect(() => {
@@ -497,7 +543,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick }) {
                             <div>
                                 <label className="text-xs font-semibold text-slate-500 uppercase">Analysis Radius ({analysisRadius} km)</label>
                                 <input
-                                    type="range" min="1" max="5" step="0.5"
+                                    type="range" min="0.5" max="5" step="0.5"
                                     value={analysisRadius}
                                     onChange={(e) => setAnalysisRadius(Number(e.target.value))}
                                     className="w-full mt-1"

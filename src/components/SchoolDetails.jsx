@@ -53,12 +53,7 @@ export default function SchoolDetails({ school, onClose }) {
                     </div>
                 )}
 
-                {!school.address && !school.phone && !school.website && !school.operator && (
-                    <div className="flex items-center gap-2 text-slate-400 text-sm italic py-4">
-                        <Info className="w-4 h-4" />
-                        No additional details available.
-                    </div>
-                )}
+
             </div>
         </div>
     );
