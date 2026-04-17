@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { fetchSchools } from '../utils/overpassQuery';
 import { formatSchoolData } from '../utils/formatData';
 
+const CACHE_KEY = 'schoolsData_v2'; // bump version to bust stale cache
+
 export function useSchoolsData() {
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -9,16 +11,24 @@ export function useSchoolsData() {
 
     // Filters State
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('all'); // 'all', 'named', 'unnamed'
+    const [filterType, setFilterType] = useState('all');
 
     const loadData = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const cached = localStorage.getItem("schoolsData");
+            const cached = localStorage.getItem(CACHE_KEY);
 
             if (cached) {
-                setData(JSON.parse(cached));
+                const parsed = JSON.parse(cached);
+                // Re-run format to ensure all fields are present (handles stale cache)
+                const safeData = Array.isArray(parsed) ? parsed.map(s => ({
+                    ...s,
+                    schoolType: s.schoolType || 'unknown',
+                    isNamed: s.isNamed !== undefined ? s.isNamed : !!s.name,
+                    name: s.name || 'Unnamed School',
+                })) : [];
+                setData(safeData);
                 setIsLoading(false);
                 return;
             }
@@ -30,10 +40,10 @@ export function useSchoolsData() {
             }
             const formattedData = formatSchoolData(rawData);
 
-            localStorage.setItem("schoolsData", JSON.stringify(formattedData));
+            localStorage.setItem(CACHE_KEY, JSON.stringify(formattedData));
             setData(formattedData);
         } catch (err) {
-            setError(err.message || "An unknown error occurred while fetching data.");
+            setError(err.message || 'An unknown error occurred while fetching data.');
         } finally {
             setIsLoading(false);
         }
@@ -44,8 +54,9 @@ export function useSchoolsData() {
     }, []);
 
     const filteredData = useMemo(() => {
+        if (!Array.isArray(data)) return [];
         return data.filter(school => {
-            // Filter by type
+            if (!school) return false;
             if (filterType === 'named' && !school.isNamed) return false;
             if (filterType === 'unnamed' && school.isNamed) return false;
             if (filterType === 'private' && school.schoolType !== 'private') return false;
@@ -53,11 +64,9 @@ export function useSchoolsData() {
             if (filterType === 'community' && school.schoolType !== 'community') return false;
             if (filterType === 'unknown' && school.schoolType !== 'unknown') return false;
 
-            // Search filter
             if (searchTerm) {
-                if (!school.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-                    return false;
-                }
+                const name = school.name || '';
+                if (!name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
             }
 
             return true;
@@ -65,13 +74,14 @@ export function useSchoolsData() {
     }, [data, searchTerm, filterType]);
 
     const stats = useMemo(() => {
-        const total = data.length;
-        const named = data.filter(s => s.isNamed).length;
+        const safeData = Array.isArray(data) ? data.filter(Boolean) : [];
+        const total = safeData.length;
+        const named = safeData.filter(s => s.isNamed === true).length;
         const unnamed = total - named;
-        const privateCount = data.filter(s => s.schoolType === 'private').length;
-        const publicCount = data.filter(s => s.schoolType === 'public').length;
-        const communityCount = data.filter(s => s.schoolType === 'community').length;
-        const unknownCount = data.filter(s => s.schoolType === 'unknown').length;
+        const privateCount = safeData.filter(s => s.schoolType === 'private').length;
+        const publicCount = safeData.filter(s => s.schoolType === 'public').length;
+        const communityCount = safeData.filter(s => s.schoolType === 'community').length;
+        const unknownCount = safeData.filter(s => s.schoolType === 'unknown').length;
 
         return {
             total,
@@ -80,7 +90,7 @@ export function useSchoolsData() {
             private: privateCount,
             public: publicCount,
             community: communityCount,
-            unknown: unknownCount
+            unknown: unknownCount,
         };
     }, [data]);
 

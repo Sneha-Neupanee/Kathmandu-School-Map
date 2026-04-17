@@ -40,7 +40,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool }) {
+function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool, comparisonSchools, mapStyle, setMapStyle, viewMode, setViewMode, modeState, setModeState, registerResetMap }) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const markersRef = useRef([]);
@@ -50,14 +50,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
     const selectedPopupRef = useRef(null);
     const selectedMarkerRef = useRef(null);
 
-    const [mapStyle, setMapStyle] = useState('light');
-    const [viewMode, setViewMode] = useState('markers'); // 'markers' or 'heatmap'
-
-    // Area analysis
-    const [analysisCenter, setAnalysisCenter] = useState(null);
-    const [analysisRadius, setAnalysisRadius] = useState(2); // km
-    const [areaStats, setAreaStats] = useState(null);
-
+    // Area analysis and measure dependencies lifted to App.jsx now
     // Clustering
     const [clusterer, setClusterer] = useState(null);
     const [clusters, setClusters] = useState([]);
@@ -92,6 +85,19 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
             });
         }
 
+        if (registerResetMap) {
+            registerResetMap(() => {
+                if (!map.current) return;
+                map.current.flyTo({
+                    center: KATHMANDU_CENTER,
+                    zoom: DEFAULT_ZOOM,
+                    speed: 1.2,
+                    curve: 1.4,
+                    essential: true
+                });
+            });
+        }
+
         map.current.on('style.load', () => {
             updateHeatmapLayer(data, viewMode);
         });
@@ -103,6 +109,19 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
             }
         };
     }, []);
+
+    // React to mapStyle prop changes (satellite toggle from Toolbar)
+    useEffect(() => {
+        if (!map.current) return;
+        map.current.setStyle(mapStyle === 'satellite' ? SATELLITE_STYLE : LIGHT_STYLE);
+    }, [mapStyle]);
+
+    // React to viewMode prop changes (heatmap toggle from Toolbar)
+    useEffect(() => {
+        if (!map.current) return;
+        // viewMode change triggers marker re-render via the clusters useEffect
+        // and heatmap update via updateHeatmapLayer inside it
+    }, [viewMode]);
 
     // Initialize supercluster
     useEffect(() => {
@@ -148,25 +167,41 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
         };
     }, [clusterer]);
 
-    // Selected School effect
+    // Selected School effect — blue dot + popup
     useEffect(() => {
         if (!map.current) return;
 
-        if (selectedSchool) {
-            if (selectedMarkerRef.current) selectedMarkerRef.current.remove();
-            if (selectedPopupRef.current) selectedPopupRef.current.remove();
+        // Clean up previous
+        if (selectedMarkerRef.current) selectedMarkerRef.current.remove();
+        if (selectedPopupRef.current) selectedPopupRef.current.remove();
+        selectedMarkerRef.current = null;
+        selectedPopupRef.current = null;
 
+        if (selectedSchool) {
+            // Blue dot element
             const el = document.createElement('div');
-            el.className = 'w-4 h-4 bg-green-500 rounded-full border-[2px] border-white shadow-lg animate-bounce pointer-events-none z-50';
+            el.style.cssText = [
+                'width:16px', 'height:16px',
+                'background:#2563eb',
+                'border-radius:50%',
+                'border:3px solid white',
+                'box-shadow:0 0 0 3px rgba(37,99,235,0.35)',
+                'animation:pulse-blue 1.5s infinite',
+            ].join(';');
 
             const popupHtml = `
-                    <div class="font-sans text-center min-w-[100px] pointer-events-none">
-                       <h3 class="font-bold text-slate-800 text-sm mb-1">${selectedSchool.name}</h3>
-                       ${selectedSchool.type ? `<span class="text-[10px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded capitalize font-semibold shadow-sm">${selectedSchool.type}</span>` : ''}
-                    </div>
+                <div style="font-family:sans-serif;text-align:center;min-width:110px">
+                    <h3 style="font-weight:700;font-size:0.875rem;color:#1e293b;margin:0 0 4px">${selectedSchool.name || 'School'}</h3>
+                    ${selectedSchool.schoolType ? `<span style="font-size:0.65rem;background:#dbeafe;color:#1d4ed8;padding:2px 6px;border-radius:4px;font-weight:600;text-transform:capitalize">${selectedSchool.schoolType}</span>` : ''}
+                </div>
             `;
 
-            selectedPopupRef.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 20 })
+            selectedPopupRef.current = new maplibregl.Popup({
+                closeButton: true,
+                closeOnClick: false,
+                offset: 22,
+                className: 'selected-school-popup',
+            })
                 .setLngLat([selectedSchool.lon, selectedSchool.lat])
                 .setHTML(popupHtml);
 
@@ -175,20 +210,13 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 .setPopup(selectedPopupRef.current)
                 .addTo(map.current);
 
-            // show popup immediately
             selectedMarkerRef.current.togglePopup();
-
-        } else {
-            if (selectedMarkerRef.current) selectedMarkerRef.current.remove();
-            if (selectedPopupRef.current) selectedPopupRef.current.remove();
-            selectedMarkerRef.current = null;
-            selectedPopupRef.current = null;
         }
 
         return () => {
             if (selectedMarkerRef.current) selectedMarkerRef.current.remove();
             if (selectedPopupRef.current) selectedPopupRef.current.remove();
-        }
+        };
     }, [selectedSchool]);
 
     // Sync Markers and click listener
@@ -210,11 +238,12 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 const el = document.createElement('div');
 
                 if (isCluster) {
-                    let colorClass = pointCount > 30 ? 'bg-red-500 border-red-200' : pointCount > 10 ? 'bg-yellow-500 border-yellow-200 text-yellow-900' : 'bg-blue-500 border-blue-200 text-white';
+                    let colorClass = pointCount > 30 ? 'bg-red-500 border-red-200' : pointCount > 10 ? 'bg-amber-500 border-amber-200 text-amber-950' : 'bg-blue-500 border-blue-200 text-white';
                     let sizeClass = pointCount > 30 ? 'w-10 h-10 text-sm' : pointCount > 10 ? 'w-8 h-8 text-xs' : 'w-7 h-7 text-[10px]';
 
-                    el.className = `${sizeClass} ${colorClass} rounded-full border-[3px] flex items-center justify-center font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 z-10`;
+                    el.className = `${sizeClass} ${colorClass} rounded-full border-[3px] flex items-center justify-center font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200`;
                     el.innerText = pointCount;
+                    el.title = "Click to zoom into this area";
 
                     const marker = new maplibregl.Marker({ element: el })
                         .setLngLat([lon, lat])
@@ -229,7 +258,8 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                     markersRef.current.push(marker);
                 } else {
                     const school = cluster.properties;
-                    el.className = 'w-3 h-3 bg-blue-600 rounded-full border border-white shadow-sm cursor-pointer hover:scale-150 transition-transform duration-200';
+                    const isCompared = comparisonSchools && comparisonSchools.some(s => s.id === school.id);
+                    el.className = `w-3 h-3 ${isCompared ? 'bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.3)]' : 'bg-blue-600'} rounded-full border border-white shadow-sm cursor-pointer hover:scale-150 transition-transform duration-200 z-0`;
 
                     const popupHtml = `
                         <div class="font-sans">
@@ -258,28 +288,38 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
             });
             updateHeatmapLayer(data, viewMode);
         }
+    }, [data, onSchoolSelect, activeMode, clusters, comparisonSchools]);
+
+    // Map Click Listener
+    useEffect(() => {
+        if (!map.current) return;
 
         const handleMapClick = (e) => {
-            if (!map.current) return;
             const { lng, lat } = e.lngLat;
 
             if (activeMode === 'analyze') {
-                setAnalysisCenter({ lng, lat });
+                setModeState(m => ({ ...m, analyze: { ...m.analyze, center: { lng, lat } } }));
+                return;
+            }
+
+            if (activeMode === 'measure') {
+                if (!modeState.measure.start || (modeState.measure.start && modeState.measure.end)) {
+                    // Start fresh
+                    setModeState(m => ({ ...m, measure: { start: { lng, lat }, end: null, distance: null } }));
+                } else if (modeState.measure.start && !modeState.measure.end) {
+                    // Second point selected
+                    const dist = turf.distance(
+                        turf.point([modeState.measure.start.lng, modeState.measure.start.lat]),
+                        turf.point([lng, lat]),
+                        { units: 'kilometers' }
+                    );
+                    setModeState(m => ({ ...m, measure: { start: m.measure.start, end: { lng, lat }, distance: dist } }));
+                }
                 return;
             }
 
             if (activeMode === 'compare') {
                 if (onMapClick) onMapClick({ lng, lat });
-
-                if (nearestMarkerRef.current) nearestMarkerRef.current.remove();
-                if (nearestPopupRef.current) nearestPopupRef.current.remove();
-
-                const el = document.createElement('div');
-                el.className = 'w-3 h-3 bg-indigo-500 rounded-full border-2 border-white shadow-md animate-pulse';
-
-                nearestMarkerRef.current = new maplibregl.Marker({ element: el })
-                    .setLngLat([lng, lat])
-                    .addTo(map.current);
                 return;
             }
 
@@ -293,50 +333,29 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 }).sort((a, b) => a.dist - b.dist);
 
                 const nearest3 = sorted.slice(0, 3);
-
                 const within2km = sorted.filter(s => s.dist <= 2);
                 const rawScore = (within2km.length * 1) + (within2km.filter(s => s.schoolType === 'public').length * 1.5);
-                let score = Math.min(10, rawScore / 2); // Normalize somewhat to 10
+                let score = Math.min(10, rawScore / 2);
                 let scoreLabel = score > 7 ? 'Excellent' : score > 4 ? 'Good' : 'Poor';
+
+                setModeState(m => ({
+                    ...m,
+                    bestLocation: { selectedPoint: { lng, lat }, nearestSchools: nearest3, score, scoreLabel }
+                }));
 
                 if (nearestMarkerRef.current) nearestMarkerRef.current.remove();
                 if (nearestPopupRef.current) nearestPopupRef.current.remove();
 
                 const el = document.createElement('div');
-                el.className = 'w-4 h-4 bg-purple-500 rounded-full border-2 border-white shadow-lg animate-bounce';
+                el.className = 'w-4 h-4 bg-purple-500 rounded-full border-2 border-white shadow-lg animate-bounce z-20';
 
                 nearestMarkerRef.current = new maplibregl.Marker({ element: el })
                     .setLngLat([lng, lat])
                     .addTo(map.current);
-
-                const htmlStr = `
-                    <div class="font-sans text-xs w-48">
-                       <h4 class="font-bold border-b pb-1 mb-2 text-slate-800">Best Location Insight</h4>
-                       <div class="bg-purple-100 text-purple-800 font-bold px-2 py-1 rounded inline-block mb-2 text-sm">
-                           Score: ${score.toFixed(1)}/10 - ${scoreLabel}
-                       </div>
-                       <p class="font-semibold text-slate-600 mb-1 border-b pb-1">Nearest 3 Schools:</p>
-                       <ul class="space-y-1.5">
-                           ${nearest3.map(s => `
-                               <li class="flex justify-between items-center bg-slate-50 p-1 rounded">
-                                   <span class="truncate w-20 font-medium" title="${s.name}">${s.name}</span>
-                                   <span class="text-[9px] bg-slate-200 text-slate-600 px-1 rounded uppercase tracking-wider">${s.schoolType}</span>
-                                   <span class="font-bold text-slate-500 text-[10px] w-8 text-right">${s.dist > 1 ? s.dist.toFixed(1) + 'km' : (s.dist * 1000).toFixed(0) + 'm'}</span>
-                               </li>
-                           `).join('')}
-                       </ul>
-                    </div>
-                `;
-
-                nearestPopupRef.current = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 15, maxWidth: '250px' })
-                    .setLngLat([lng, lat])
-                    .setHTML(htmlStr)
-                    .addTo(map.current);
-
                 return;
             }
 
-            if (activeMode === 'measure' || activeMode === 'default') {
+            if (activeMode === 'default') {
                 const centerPt = turf.point([lng, lat]);
                 let nearest = null;
                 let minDistance = Infinity;
@@ -356,10 +375,10 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                     if (nearestPopupRef.current) nearestPopupRef.current.remove();
 
                     let densityLevel = nearbyCount > 5 ? 'High Density' : nearbyCount > 2 ? 'Medium Density' : 'Low Density';
-                    let densityColor = nearbyCount > 5 ? 'bg-red-100 text-red-700' : nearbyCount > 2 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700';
+                    let densityColor = nearbyCount > 5 ? 'bg-red-100 text-red-700' : nearbyCount > 2 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
 
                     const el = document.createElement('div');
-                    el.className = 'w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-md animate-pulse';
+                    el.className = 'w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-md animate-pulse z-20';
 
                     nearestMarkerRef.current = new maplibregl.Marker({ element: el })
                         .setLngLat([lng, lat])
@@ -367,13 +386,13 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
 
                     const distanceStr = minDistance > 1 ? minDistance.toFixed(2) + ' km' : Math.round(minDistance * 1000) + ' m';
 
-                    nearestPopupRef.current = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 15 })
+                    nearestPopupRef.current = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 15, className: 'maplibre-gl-popup-z' })
                         .setLngLat([lng, lat])
                         .setHTML(`
-                            <div class="font-sans text-xs min-w-40">
+                            <div class="font-sans text-xs min-w-40 z-50">
                                <p class="mb-1 text-slate-500 font-semibold border-b pb-1">Nearest School Insight</p>
-                               <p class="font-bold text-slate-800 text-sm mt-1">${nearest.name}</p>
-                               <p class="text-red-600 font-bold mb-2">${distanceStr} away from click</p>
+                               <p class="font-bold text-slate-800 text-sm mt-1 mb-0">${nearest.name}</p>
+                               <p class="text-red-600 font-bold mb-2">${distanceStr} block distance</p>
                                
                                <div class="bg-slate-50 p-1.5 rounded border border-slate-100">
                                    <p class="text-[10px] text-slate-500 mb-1">Within 1km Radius:</p>
@@ -394,8 +413,50 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 map.current.off('click', handleMapClick);
             }
         };
+    }, [data, activeMode, modeState, setModeState, onMapClick]);
 
-    }, [data, onSchoolSelect, activeMode]);
+    // Measure Visualization
+    useEffect(() => {
+        if (!map.current || activeMode !== 'measure') {
+            if (map.current && map.current.getSource('measure-source')) {
+                map.current.getSource('measure-source').setData({ type: 'FeatureCollection', features: [] });
+            }
+            return;
+        }
+
+        const features = [];
+        if (modeState.measure.start) {
+            features.push(turf.point([modeState.measure.start.lng, modeState.measure.start.lat], { type: 'point' }));
+        }
+        if (modeState.measure.end) {
+            features.push(turf.point([modeState.measure.end.lng, modeState.measure.end.lat], { type: 'point' }));
+        }
+        if (modeState.measure.start && modeState.measure.end) {
+            features.push(turf.lineString([
+                [modeState.measure.start.lng, modeState.measure.start.lat],
+                [modeState.measure.end.lng, modeState.measure.end.lat]
+            ]));
+        }
+
+        if (map.current.getSource('measure-source')) {
+            map.current.getSource('measure-source').setData(turf.featureCollection(features));
+        } else {
+            map.current.addSource('measure-source', { type: 'geojson', data: turf.featureCollection(features) });
+            map.current.addLayer({
+                id: 'measure-line',
+                type: 'line',
+                source: 'measure-source',
+                paint: { 'line-color': '#2563eb', 'line-width': 3, 'line-dasharray': [2, 2] }
+            });
+            map.current.addLayer({
+                id: 'measure-points',
+                type: 'circle',
+                source: 'measure-source',
+                filter: ['==', 'type', 'point'],
+                paint: { 'circle-radius': 6, 'circle-color': '#ffffff', 'circle-stroke-width': 3, 'circle-stroke-color': '#2563eb' }
+            });
+        }
+    }, [modeState.measure, activeMode]);
 
     const updateHeatmapLayer = (currentData, mode) => {
         if (!map.current || !map.current.isStyleLoaded()) return;
@@ -446,14 +507,14 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
 
     // Calculate Area Analysis Stats and Draw Circle
     useEffect(() => {
-        if (!analysisCenter || activeMode !== 'analyze') {
+        if (!modeState.analyze.center || activeMode !== 'analyze') {
             if (map.current && map.current.getSource('analysis-circle')) {
                 map.current.getSource('analysis-circle').setData({ type: 'FeatureCollection', features: [] });
             }
             return;
         }
 
-        const centerPt = turf.point([analysisCenter.lng, analysisCenter.lat]);
+        const centerPt = turf.point([modeState.analyze.center.lng, modeState.analyze.center.lat]);
         let total = 0;
         let privateSchools = 0;
         let publicSchools = 0;
@@ -462,7 +523,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
         data.forEach(s => {
             const pt = turf.point([s.lon, s.lat]);
             const dist = turf.distance(centerPt, pt, { units: 'kilometers' });
-            if (dist <= analysisRadius) {
+            if (dist <= modeState.analyze.radius) {
                 total++;
                 if (s.schoolType === 'private') privateSchools++;
                 else if (s.schoolType === 'public') publicSchools++;
@@ -470,17 +531,26 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
             }
         });
 
-        const area = Math.PI * Math.pow(analysisRadius, 2);
+        const area = Math.PI * Math.pow(modeState.analyze.radius, 2);
         const density = total / area;
         let densityLabel = 'Low';
         if (density > 10) densityLabel = 'High';
         else if (density > 3) densityLabel = 'Medium';
 
-        setAreaStats({ total, private: privateSchools, public: publicSchools, community, density, densityLabel });
+        // we only set stats if it changed to prevent infinite loops, but here we can just update it
+        // Note: setting state here might trigger re-render, but modeState.analyze is stable except stats.
+        // Doing this safely using a functional update, though React batches it.
+        setModeState(m => {
+            if (m.analyze.stats?.total === total && m.analyze.stats?.density === density) return m;
+            return {
+                ...m,
+                analyze: { ...m.analyze, stats: { total, private: privateSchools, public: publicSchools, community, density, densityLabel } }
+            };
+        });
 
         if (!map.current || !map.current.isStyleLoaded()) return;
 
-        const circle = turf.circle([analysisCenter.lng, analysisCenter.lat], analysisRadius, { steps: 64, units: 'kilometers' });
+        const circle = turf.circle([modeState.analyze.center.lng, modeState.analyze.center.lat], modeState.analyze.radius, { steps: 64, units: 'kilometers' });
 
         if (map.current.getSource('analysis-circle')) {
             map.current.getSource('analysis-circle').setData(circle);
@@ -499,79 +569,66 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 paint: { 'line-color': '#2563eb', 'line-width': 2 }
             });
         }
-    }, [analysisCenter, analysisRadius, activeMode, data]);
+    }, [modeState.analyze.center, modeState.analyze.radius, activeMode, data, setModeState]);
 
     const toggleMapStyle = () => {
         const nextStyle = mapStyle === 'light' ? 'satellite' : 'light';
-        setMapStyle(nextStyle);
+        if (setMapStyle) setMapStyle(nextStyle);
         if (map.current) {
             map.current.setStyle(nextStyle === 'light' ? LIGHT_STYLE : SATELLITE_STYLE);
         }
     };
 
     const toggleViewMode = () => {
-        setViewMode(prev => prev === 'markers' ? 'heatmap' : 'markers');
+        if (setViewMode) setViewMode(prev => prev === 'markers' ? 'heatmap' : 'markers');
     };
 
     return (
         <div className="absolute inset-0 w-full h-full">
             <div ref={mapContainer} className="w-full h-full" />
 
-            <div className="absolute top-4 right-14 z-10 flex gap-2">
-                <button
-                    onClick={toggleMapStyle}
-                    className="bg-white px-3 py-1.5 rounded-md shadow-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors border border-slate-200"
-                >
-                    {mapStyle === 'light' ? '🛰️ Satellite' : '🗺️ Map'}
-                </button>
-                <button
-                    onClick={toggleViewMode}
-                    className="bg-white px-3 py-1.5 rounded-md shadow-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors border border-slate-200"
-                >
-                    {viewMode === 'markers' ? '🔥 Heatmap' : '📍 Markers'}
-                </button>
-            </div>
-
-            {/* Smart Area Analysis Panel */}
-            {activeMode === 'analyze' && (
-                <div className="absolute bottom-6 left-6 z-10 bg-white p-4 rounded-xl shadow-xl border border-slate-200 w-72">
-                    <h3 className="font-bold text-slate-800 mb-2 border-b pb-2">Smart Area Analysis</h3>
-                    {!analysisCenter ? (
-                        <p className="text-sm text-slate-500">Click anywhere on the map to analyze the area.</p>
-                    ) : (
-                        <div className="space-y-3">
-                            <div>
-                                <label className="text-xs font-semibold text-slate-500 uppercase">Analysis Radius ({analysisRadius} km)</label>
-                                <input
-                                    type="range" min="0.5" max="5" step="0.5"
-                                    value={analysisRadius}
-                                    onChange={(e) => setAnalysisRadius(Number(e.target.value))}
-                                    className="w-full mt-1"
-                                />
-                            </div>
-                            {areaStats && (
-                                <div className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
-                                    <p>Total Schools: <span className="font-bold">{areaStats.total}</span></p>
-                                    <p className="flex items-center">Density: <span className="font-bold ml-1">{areaStats.density.toFixed(1)} / km²</span> <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ml-2 text-white ${areaStats.densityLabel === 'High' ? 'bg-red-500' : areaStats.densityLabel === 'Medium' ? 'bg-amber-500' : 'bg-green-500'}`}>{areaStats.densityLabel}</span></p>
-                                    <div className="pt-2 mt-2 border-t border-slate-200 pt-2 text-xs">
-                                        <p>Public: <b>{areaStats.public}</b> | Private: <b>{areaStats.private}</b> | Community: <b>{areaStats.community}</b></p>
-                                    </div>
-                                </div>
-                            )}
+            {/* Map Legend */}
+            {viewMode !== 'heatmap' && (
+                <div className="absolute bottom-6 right-6 z-10 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-md border border-slate-200">
+                    <h4 className="text-[10px] uppercase font-bold text-slate-500 mb-2 border-b border-slate-100 pb-1">Map Legend</h4>
+                    <div className="space-y-2 text-[10px] text-slate-700 font-medium">
+                        <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-blue-600 border border-white shadow-sm inline-block"></span>
+                            School
                         </div>
-                    )}
+                        <div className="flex items-center gap-2">
+                            <span className="w-4 h-4 rounded-full bg-yellow-500 border border-yellow-200 flex items-center justify-center text-[8px] font-bold text-yellow-900 shadow-sm">&gt;</span>
+                            Cluster (10+)
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-4 h-4 rounded-full bg-red-500 border border-red-200 flex items-center justify-center text-[8px] font-bold text-white shadow-sm">&gt;</span>
+                            Cluster (30+)
+                        </div>
+                        {activeMode === 'compare' && (
+                            <div className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_0_2px_rgba(245,158,11,0.3)] border border-white inline-block"></span>
+                                Compared
+                            </div>
+                        )}
+                        {activeMode === 'analyze' && (
+                            <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                                <span className="w-3 h-3 rounded-full bg-blue-500/20 border border-blue-600 inline-block"></span>
+                                Analysis Area
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
-            {/* Heatmap Upgrade Additions */}
+            {/* Heatmap Legend */}
             {viewMode === 'heatmap' && (
-                <div className="absolute bottom-6 right-6 z-10 bg-white p-4 rounded-xl shadow-xl w-60 border border-slate-200">
-                    <h4 className="font-bold text-slate-800 text-sm mb-2 border-b pb-1">Heatmap Density</h4>
-                    <p className="text-xs text-slate-500 mb-2">Shows school clustering density across Kathmandu.</p>
-                    <div className="h-3 w-full rounded bg-gradient-to-r from-blue-300 via-green-400 to-red-500 mb-1"></div>
-                    <div className="flex justify-between text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-                        <span>Low</span>
-                        <span>High</span>
+                <div className="absolute bottom-6 right-6 z-10 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-md border border-slate-200 w-60">
+                    <h4 className="font-bold text-slate-800 text-sm mb-2 border-b border-slate-100 pb-1">Heatmap Density</h4>
+                    <p className="text-[10px] text-slate-500 mb-2 font-medium">Shows school clustering density across Kathmandu.</p>
+                    <div className="h-2 w-full rounded-full bg-gradient-to-r from-blue-300 via-green-400 to-red-500 mb-1 shadow-inner"></div>
+                    <div className="flex justify-between text-[9px] uppercase tracking-widest text-slate-500 font-bold mt-1">
+                        <span>Low Density</span>
+                        <span>High Density</span>
                     </div>
                 </div>
             )}

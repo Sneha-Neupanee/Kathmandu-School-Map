@@ -29,8 +29,31 @@ function App() {
   const [compareRefPoint, setCompareRefPoint] = useState(null);
   const [showComparePanel, setShowComparePanel] = useState(false);
 
-  // Dark Mode
-  const [isDarkMode, setIsDarkMode] = useState(true); // default to dark
+  const [modeState, setModeState] = useState({
+    measure: { start: null, end: null, distance: null },
+    analyze: { center: null, radius: 2, stats: null },
+    bestLocation: { selectedPoint: null, nearestSchools: [], score: 0, scoreLabel: '' }
+  });
+
+  const handleResetMapRef = useRef(null);
+
+  const resetView = () => {
+    setActiveMode('default');
+    setSearchTerm('');
+    setFilterType('all');
+    setSelectedSchool(null);
+    setComparisonSchools([]);
+    setCompareRefPoint(null);
+    setShowComparePanel(false);
+    setModeState({
+      measure: { start: null, end: null, distance: null },
+      analyze: { center: null, radius: 2, stats: null },
+      bestLocation: { selectedPoint: null, nearestSchools: [], score: 0, scoreLabel: '' }
+    });
+    if (handleResetMapRef.current) handleResetMapRef.current();
+  };
+
+  const [isDarkMode, setIsDarkMode] = useState(false); // default LIGHT mode
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -38,6 +61,10 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // Map view state (lifted up so Toolbar can control them)
+  const [mapStyle, setMapStyle] = useState('light');
+  const [viewMode, setViewMode] = useState('markers');
 
   return (
     <div className={`flex h-screen w-full transition-colors duration-300 overflow-hidden font-sans ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
@@ -69,26 +96,56 @@ function App() {
           schools={filteredData}
           selectedSchool={selectedSchool}
           onCloseDetails={() => setSelectedSchool(null)}
+          activeMode={activeMode}
+          setActiveMode={setActiveMode}
+          modeState={modeState}
+          setModeState={setModeState}
+          resetView={resetView}
         />
       </div>
 
       {/* Main Content Area */}
       <div className="flex-1 relative flex flex-col">
-        {/* Toolbar */}
-        <Toolbar activeMode={activeMode} setActiveMode={setActiveMode} />
+        <Toolbar
+          activeMode={activeMode}
+          setActiveMode={setActiveMode}
+          viewMode={viewMode}
+          toggleViewMode={() => setViewMode(prev => prev === 'markers' ? 'heatmap' : 'markers')}
+          mapStyle={mapStyle}
+          toggleMapStyle={() => {
+            const next = mapStyle === 'light' ? 'satellite' : 'light';
+            setMapStyle(next);
+          }}
+        />
 
-        {/* Theme Toggle */}
-        <div className="absolute top-4 right-4 z-20">
+        {/* Floating Mode Instruction Box */}
+        {activeMode !== 'default' && (
+          <div className="absolute top-[68px] left-4 z-20 bg-white/95 backdrop-blur-sm shadow-md border border-slate-200 rounded-lg p-3 w-64 pointer-events-auto">
+            <h4 className="font-bold text-slate-800 text-sm mb-1">
+              {activeMode === 'measure' && 'Measure Distance'}
+              {activeMode === 'analyze' && 'Analyze Area'}
+              {activeMode === 'bestLocation' && 'Best Location'}
+              {activeMode === 'compare' && 'Compare Schools'}
+            </h4>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              {activeMode === 'measure' && 'Click two points on the map to calculate distance.'}
+              {activeMode === 'analyze' && 'Click anywhere to analyze school density within a selected radius.'}
+              {activeMode === 'bestLocation' && 'Click anywhere to find nearest schools and accessibility score.'}
+              {activeMode === 'compare' && 'Select up to 3 schools from map or search to compare.'}
+            </p>
+          </div>
+        )}
+
+        {/* Theme toggle — anchored top-right, shifted left from map controls */}
+        <div className="absolute top-3 right-16 z-20">
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2 rounded-full bg-white dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            title="Toggle Theme"
+            className="p-2 rounded-full bg-white shadow-md border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
         </div>
-
-        {/* Loading overlay */}
         {isLoading && (
           <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
@@ -137,6 +194,14 @@ function App() {
           }}
           activeMode={activeMode}
           selectedSchool={selectedSchool}
+          comparisonSchools={comparisonSchools}
+          mapStyle={mapStyle}
+          setMapStyle={setMapStyle}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          modeState={modeState}
+          setModeState={setModeState}
+          registerResetMap={(resetFn) => { handleResetMapRef.current = resetFn; }}
         />
 
 
