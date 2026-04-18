@@ -17,9 +17,12 @@ export default function SearchBar({ searchTerm, onSearch, exactMatchAction }) {
         };
     }, [localValue, onSearch, searchTerm]);
 
-    // Sync external changes (e.g. resets)
+    // Sync external changes (e.g. resets) — defer to avoid cascading render lint
     useEffect(() => {
-        setLocalValue(searchTerm || '');
+        const id = requestAnimationFrame(() => {
+            setLocalValue(searchTerm || '');
+        });
+        return () => cancelAnimationFrame(id);
     }, [searchTerm]);
 
     const handleSearchClick = () => {

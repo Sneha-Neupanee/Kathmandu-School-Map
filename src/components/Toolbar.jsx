@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Ruler, Sparkles, MapPin, BarChart3, Thermometer, Satellite, Search, X, Loader2 } from 'lucide-react';
+import React from 'react';
+import { Ruler, Sparkles, MapPin, BarChart3, Thermometer, Satellite, Navigation } from 'lucide-react';
 
 const MODES = [
     { id: 'measure', label: 'Measure', icon: Ruler, tooltip: 'Click two points on the map to measure distance' },
@@ -14,13 +14,14 @@ export default function Toolbar({
     viewMode,
     toggleViewMode,
     mapStyle,
-    toggleMapStyle
+    toggleMapStyle,
+    onSearchSchoolsNearYou,
 }) {
 
     return (
-        <div className="absolute top-3 left-4 z-20 flex items-center gap-2 flex-wrap max-w-[calc(100vw-160px)]">
+        <div className="absolute top-3 left-4 z-20 flex flex-col items-start gap-2 max-w-[calc(100vw-160px)]">
             {/* Map Interaction Modes */}
-            <div className="bg-slate-50 shadow-md rounded-full border border-slate-400 p-1 flex gap-0.5">
+            <div className="bg-slate-50 shadow-md rounded-full border border-slate-400 p-1 flex gap-0.5 flex-wrap">
                 {MODES.map((mode) => {
                     const Icon = mode.icon;
                     const isActive = activeMode === mode.id;
@@ -42,8 +43,19 @@ export default function Toolbar({
                 })}
             </div>
 
+            <button
+                type="button"
+                onClick={() => onSearchSchoolsNearYou?.()}
+                title="Use your current location to analyze schools within 0.5 km"
+                className="bg-slate-50 shadow-md rounded-full border border-slate-400 px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all"
+            >
+                <Navigation className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="hidden sm:inline">Search schools near your location</span>
+                <span className="sm:hidden">Near me</span>
+            </button>
+
             {/* Map View Controls */}
-            <div className="bg-slate-50 shadow-md rounded-full border border-slate-400 p-1 flex gap-0.5">
+            <div className="bg-slate-50 shadow-md rounded-full border border-slate-400 p-1 flex gap-0.5 flex-wrap">
                 <button
                     onClick={toggleViewMode}
                     title="Toggle density heat visualization"

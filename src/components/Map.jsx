@@ -3,6 +3,13 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import * as turf from '@turf/turf';
 import supercluster from 'supercluster';
+import { analyzeArea, stripDistanceKm } from '../utils/analyzeArea';
+
+function truncateSchoolName(name, maxLen = 14) {
+    const n = name || 'School';
+    if (n.length <= maxLen) return n;
+    return `${n.slice(0, maxLen - 1)}…`;
+}
 
 const KATHMANDU_CENTER = [85.3240, 27.7172];
 const DEFAULT_ZOOM = 12.5;
@@ -24,23 +31,7 @@ const SATELLITE_STYLE = {
     }]
 };
 
-// Haversine formula
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3; // metres
-    const φ1 = lat1 * Math.PI / 180; // φ, λ in radians
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-        Math.cos(φ1) * Math.cos(φ2) *
-        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
-}
-
-function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool, comparisonSchools, mapStyle, setMapStyle, viewMode, setViewMode, modeState, setModeState, registerResetMap, registerFlyToLocation }) {
+function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool, comparisonSchools, mapStyle, viewMode, modeState, setModeState, registerResetMap, registerFlyToLocation, analyzeListHighlightId }) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const markersRef = useRef([]);
@@ -124,7 +115,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 map.current = null;
             }
         };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps -- single map init; refs hold latest props
 
     // React to mapStyle prop changes (satellite toggle from Toolbar)
     useEffect(() => {
@@ -253,12 +244,67 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
         markersRef.current = [];
 
         if (viewMode === 'heatmap') {
-            // Let heatmap handle the view
-            updateHeatmapLayer(data, viewMode);
-        } else {
-            clusters.forEach(cluster => {
+            const heatSchools =
+                activeMode === 'analyze' && modeState.analyze.center
+                    ? (modeState.analyze.schoolsInRadius || []).map(stripDistanceKm)
+                    : data;
+            updateHeatmapLayer(heatSchools, viewMode);
+            return;
+        }
+
+        if (activeMode === 'analyze' && modeState.analyze.center) {
+            const list = modeState.analyze.schoolsInRadius || [];
+            list.forEach((school) => {
+                const s = stripDistanceKm(school);
+                const lon = s.lon;
+                const lat = s.lat;
+                const isHighlight = analyzeListHighlightId != null && s.id === analyzeListHighlightId;
+
+                const wrap = document.createElement('div');
+                wrap.style.cssText =
+                    'display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;';
+
+                const el = document.createElement('div');
+                el.style.cssText = [
+                    'width:12px',
+                    'height:12px',
+                    'background:#2563eb',
+                    'border-radius:50%',
+                    'border:2px solid white',
+                    isHighlight
+                        ? 'box-shadow:0 0 0 3px rgba(245,158,11,0.95),0 2px 8px rgba(37,99,235,0.5)'
+                        : 'box-shadow:0 1px 4px rgba(37,99,235,0.45)',
+                ].join(';');
+
+                const label = document.createElement('div');
+                label.textContent = truncateSchoolName(s.name);
+                label.title = s.name || '';
+                label.style.cssText =
+                    'max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;font-weight:700;color:#1e3a8a;background:rgba(255,255,255,0.95);padding:1px 5px;border-radius:4px;border:1px solid #93c5fd;line-height:1.2;';
+
+                wrap.appendChild(el);
+                wrap.appendChild(label);
+
+                const marker = new maplibregl.Marker({ element: wrap })
+                    .setLngLat([lon, lat])
+                    .addTo(map.current);
+
+                wrap.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (!map.current) return;
+                    map.current.flyTo({ center: [lon, lat], zoom: 16, speed: 1.2, curve: 1.4, essential: true });
+                    if (onSchoolSelectRef.current) onSchoolSelectRef.current(s);
+                });
+
+                markersRef.current.push(marker);
+            });
+            updateHeatmapLayer(list.map(stripDistanceKm), viewMode);
+            return;
+        }
+
+        clusters.forEach((cluster) => {
                 const [lon, lat] = cluster.geometry.coordinates;
-                const { cluster: isCluster, point_count: pointCount, schoolId } = cluster.properties;
+                const { cluster: isCluster, point_count: pointCount } = cluster.properties;
 
                 const el = document.createElement('div');
 
@@ -310,10 +356,21 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
 
                     markersRef.current.push(marker);
                 }
-            });
-            updateHeatmapLayer(data, viewMode);
-        }
-    }, [clusters, comparisonSchools, viewMode]);
+        });
+        updateHeatmapLayer(data, viewMode);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- updateHeatmapLayer closes over mapStyle; stable enough for markers/heatmap sync
+    }, [
+        clusters,
+        clusterer,
+        comparisonSchools,
+        viewMode,
+        activeMode,
+        modeState.analyze.center,
+        modeState.analyze.schoolsInRadius,
+        analyzeListHighlightId,
+        data,
+        mapStyle,
+    ]);
 
     // Map Click Listener — registered ONCE, reads fresh values via refs
     useEffect(() => {
@@ -339,8 +396,15 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
             const currentModeState = modeStateRef.current;
 
             if (mode === 'analyze') {
-                setModeState(m => ({ ...m, analyze: { ...m.analyze, center: { lng, lat } } }));
-                placeBlueDot(lng, lat);
+                setModeState(m => ({
+                    ...m,
+                    analyze: {
+                        ...m.analyze,
+                        center: { lng, lat },
+                        isLocationMode: false,
+                        listFocusSchoolId: null,
+                    },
+                }));
                 return;
             }
 
@@ -574,7 +638,27 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
         }
     };
 
-    // Calculate Area Analysis Stats and Draw Circle
+    // Analyze-area center marker (manual + GPS)
+    useEffect(() => {
+        if (!map.current || activeMode !== 'analyze' || !modeState.analyze.center) {
+            return undefined;
+        }
+        const { lng, lat } = modeState.analyze.center;
+        if (nearestMarkerRef.current) nearestMarkerRef.current.remove();
+        const el = document.createElement('div');
+        el.style.cssText = 'width:16px;height:16px;background:#2563eb;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(37,99,235,0.5);z-index:1;';
+        nearestMarkerRef.current = new maplibregl.Marker({ element: el })
+            .setLngLat([lng, lat])
+            .addTo(map.current);
+        return () => {
+            if (nearestMarkerRef.current) {
+                nearestMarkerRef.current.remove();
+                nearestMarkerRef.current = null;
+            }
+        };
+    }, [activeMode, modeState.analyze.center]);
+
+    // Calculate area analysis (shared analyzeArea util) + draw circle
     useEffect(() => {
         if (!modeState.analyze.center || activeMode !== 'analyze') {
             if (map.current && map.current.getSource('analysis-circle')) {
@@ -583,43 +667,39 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
             return;
         }
 
-        const centerPt = turf.point([modeState.analyze.center.lng, modeState.analyze.center.lat]);
-        let total = 0;
-        let privateSchools = 0;
-        let publicSchools = 0;
-        let community = 0;
+        const { schoolsInRadius, stats, nearestSchool } = analyzeArea(
+            modeState.analyze.center,
+            modeState.analyze.radius,
+            data
+        );
 
-        data.forEach(s => {
-            const pt = turf.point([s.lon, s.lat]);
-            const dist = turf.distance(centerPt, pt, { units: 'kilometers' });
-            if (dist <= modeState.analyze.radius) {
-                total++;
-                if (s.schoolType === 'private') privateSchools++;
-                else if (s.schoolType === 'public') publicSchools++;
-                else if (s.schoolType === 'community') community++;
-            }
-        });
-
-        const area = Math.PI * Math.pow(modeState.analyze.radius, 2);
-        const density = total / area;
-        let densityLabel = 'Low';
-        if (density > 10) densityLabel = 'High';
-        else if (density > 3) densityLabel = 'Medium';
-
-        // we only set stats if it changed to prevent infinite loops, but here we can just update it
-        // Note: setting state here might trigger re-render, but modeState.analyze is stable except stats.
-        // Doing this safely using a functional update, though React batches it.
-        setModeState(m => {
-            if (m.analyze.stats?.total === total && m.analyze.stats?.density === density) return m;
+        setModeState((m) => {
+            const prev = m.analyze;
+            const same =
+                prev.stats?.total === stats.total &&
+                prev.stats?.unknown === stats.unknown &&
+                prev.stats?.density === stats.density &&
+                prev.nearestSchool?.school?.id === nearestSchool?.school?.id &&
+                prev.schoolsInRadius?.length === schoolsInRadius.length;
+            if (same) return m;
             return {
                 ...m,
-                analyze: { ...m.analyze, stats: { total, private: privateSchools, public: publicSchools, community, density, densityLabel } }
+                analyze: {
+                    ...m.analyze,
+                    stats,
+                    schoolsInRadius,
+                    nearestSchool,
+                },
             };
         });
 
         if (!map.current || !map.current.isStyleLoaded()) return;
 
-        const circle = turf.circle([modeState.analyze.center.lng, modeState.analyze.center.lat], modeState.analyze.radius, { steps: 64, units: 'kilometers' });
+        const circle = turf.circle(
+            [modeState.analyze.center.lng, modeState.analyze.center.lat],
+            modeState.analyze.radius,
+            { steps: 64, units: 'kilometers' }
+        );
 
         if (map.current.getSource('analysis-circle')) {
             map.current.getSource('analysis-circle').setData(circle);
@@ -629,28 +709,16 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 id: 'analysis-circle-fill',
                 type: 'fill',
                 source: 'analysis-circle',
-                paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.2 }
+                paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.2 },
             });
             map.current.addLayer({
                 id: 'analysis-circle-outline',
                 type: 'line',
                 source: 'analysis-circle',
-                paint: { 'line-color': '#2563eb', 'line-width': 2 }
+                paint: { 'line-color': '#2563eb', 'line-width': 2 },
             });
         }
     }, [modeState.analyze.center, modeState.analyze.radius, activeMode, data, setModeState]);
-
-    const toggleMapStyle = () => {
-        const nextStyle = mapStyle === 'light' ? 'satellite' : 'light';
-        if (setMapStyle) setMapStyle(nextStyle);
-        if (map.current) {
-            map.current.setStyle(nextStyle === 'light' ? LIGHT_STYLE : SATELLITE_STYLE);
-        }
-    };
-
-    const toggleViewMode = () => {
-        if (setViewMode) setViewMode(prev => prev === 'markers' ? 'heatmap' : 'markers');
-    };
 
     return (
         <div className="absolute inset-0 w-full h-full">

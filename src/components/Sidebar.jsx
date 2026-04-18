@@ -16,10 +16,6 @@ export default function Sidebar({
     schools,
     selectedSchool,
     onCloseDetails,
-    activeMode,
-    setActiveMode,
-    modeState,
-    setModeState,
     resetView
 }) {
     return (

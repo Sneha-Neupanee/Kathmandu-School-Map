@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { useSchoolsData } from './hooks/useSchoolsData';
 import Map from './components/Map';
 import Sidebar from './components/Sidebar';
@@ -7,7 +7,19 @@ import Toolbar from './components/Toolbar';
 import MapOverlayPanel from './components/MapOverlayPanel';
 import ComparisonPanel from './components/ComparisonPanel';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { useEffect } from 'react';
+import { DEFAULT_RADIUS_KM, stripDistanceKm } from './utils/analyzeArea';
+
+const emptyAnalyze = () => ({
+  center: null,
+  radius: DEFAULT_RADIUS_KM,
+  stats: null,
+  isLocationMode: false,
+  schoolsInRadius: [],
+  nearestSchool: null,
+  showSchoolList: false,
+  locationError: null,
+  listFocusSchoolId: null,
+});
 
 function App() {
   const {
@@ -34,7 +46,7 @@ function App() {
 
   const [modeState, setModeState] = useState({
     measure: { start: null, end: null, distance: null },
-    analyze: { center: null, radius: 2, stats: null },
+    analyze: emptyAnalyze(),
     bestLocation: { selectedPoint: null, nearestSchools: [], score: 0, scoreLabel: '' }
   });
 
@@ -48,30 +60,117 @@ function App() {
     setShowComparePanel(false);
     setModeState({
       measure: { start: null, end: null, distance: null },
-      analyze: { center: null, radius: 2, stats: null },
+      analyze: emptyAnalyze(),
       bestLocation: { selectedPoint: null, nearestSchools: [], score: 0, scoreLabel: '' }
     });
     if (handleResetMapRef.current) handleResetMapRef.current();
   };
 
+  const areaCompareActive =
+    activeMode === 'compare' &&
+    modeState.analyze.center != null &&
+    modeState.analyze.stats != null;
+
+  const compareSchoolPool = useMemo(() => {
+    if (areaCompareActive) {
+      return modeState.analyze.schoolsInRadius.map(stripDistanceKm);
+    }
+    return filteredData;
+  }, [areaCompareActive, modeState.analyze.schoolsInRadius, filteredData]);
+
+  const requestNearbySchools = useCallback(() => {
+    if (!navigator.geolocation) {
+      setActiveMode('analyze');
+      setModeState((m) => ({
+        ...m,
+        analyze: {
+          ...emptyAnalyze(),
+          locationError: 'failed',
+          isLocationMode: true,
+        },
+      }));
+      return;
+    }
+    setActiveMode('analyze');
+    setModeState((m) => ({
+      ...m,
+      analyze: {
+        ...emptyAnalyze(),
+        locationError: null,
+        isLocationMode: true,
+      },
+    }));
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setModeState((m) => ({
+          ...m,
+          analyze: {
+            ...m.analyze,
+            center: { lat, lng },
+            radius: DEFAULT_RADIUS_KM,
+            isLocationMode: true,
+            locationError: null,
+            listFocusSchoolId: null,
+          },
+        }));
+        if (handleFlyToLocationRef.current) {
+          handleFlyToLocationRef.current({ lat, lng });
+        }
+      },
+      (err) => {
+        const denied = err && (err.code === 1 || err.code === err.PERMISSION_DENIED);
+        setModeState((m) => ({
+          ...m,
+          analyze: {
+            ...emptyAnalyze(),
+            locationError: denied ? 'denied' : 'failed',
+            isLocationMode: true,
+          },
+        }));
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  }, []);
+
+  /* Reset peripheral UI when switching map modes; intentional synchronous batch */
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (activeMode !== 'default') {
       setSelectedSchool(null);
     }
-    // Do NOT reset searchTerm here — it clears filter context on tab switch
     setComparisonSchools([]);
     setCompareRefPoint(null);
     setShowComparePanel(false);
-    setModeState({
+    setModeState((prev) => ({
       measure: { start: null, end: null, distance: null },
-      analyze: { center: null, radius: 2, stats: null },
-      bestLocation: { selectedPoint: null, nearestSchools: [], score: 0, scoreLabel: '' }
-    });
+      analyze: activeMode === 'default' ? emptyAnalyze() : prev.analyze,
+      bestLocation:
+        activeMode === 'bestLocation'
+          ? prev.bestLocation
+          : { selectedPoint: null, nearestSchools: [], score: 0, scoreLabel: '' },
+    }));
   }, [activeMode]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Map view state (lifted up so Toolbar can control them)
   const [mapStyle, setMapStyle] = useState('light');
   const [viewMode, setViewMode] = useState('markers');
+
+  const onAreaListSchoolClick = useCallback((school) => {
+    setModeState((m) => ({
+      ...m,
+      analyze: { ...m.analyze, listFocusSchoolId: school.id },
+    }));
+    setSelectedSchool(school);
+    if (handleFlyToRef.current) {
+      handleFlyToRef.current(school);
+    }
+  }, []);
+
+  const sidebarSchools = compareSchoolPool;
 
   return (
     <div className="flex h-screen w-full overflow-hidden font-sans bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0] text-slate-800">
@@ -84,11 +183,15 @@ function App() {
           setSearchTerm={setSearchTerm}
           filterType={filterType}
           setFilterType={setFilterType}
-          filteredCount={filteredData.length}
+          filteredCount={sidebarSchools.length}
           onSchoolSelect={(school) => {
             if (activeMode === 'compare') {
-              setComparisonSchools(prev => {
-                if (prev.find(s => s.id === school.id)) return prev.filter(s => s.id !== school.id);
+              if (areaCompareActive) {
+                const allowed = modeState.analyze.schoolsInRadius.some((s) => s.id === school.id);
+                if (!allowed) return;
+              }
+              setComparisonSchools((prev) => {
+                if (prev.find((s) => s.id === school.id)) return prev.filter((s) => s.id !== school.id);
                 if (prev.length < 3) return [...prev, school];
                 return prev;
               });
@@ -100,13 +203,9 @@ function App() {
               }
             }
           }}
-          schools={filteredData}
+          schools={sidebarSchools}
           selectedSchool={selectedSchool}
           onCloseDetails={() => setSelectedSchool(null)}
-          activeMode={activeMode}
-          setActiveMode={setActiveMode}
-          modeState={modeState}
-          setModeState={setModeState}
           resetView={resetView}
         />
       </div>
@@ -123,6 +222,7 @@ function App() {
             const next = mapStyle === 'light' ? 'satellite' : 'light';
             setMapStyle(next);
           }}
+          onSearchSchoolsNearYou={requestNearbySchools}
         />
 
         {isLoading && (
@@ -154,20 +254,28 @@ function App() {
         <Map
           data={filteredData}
           registerFlyTo={(flyToFn) => { handleFlyToRef.current = flyToFn; }}
-          onSchoolSelect={useCallback((school) => {
-            if (activeMode === 'compare') {
-              setComparisonSchools(prev => {
-                if (prev.find(s => s.id === school.id)) return prev.filter(s => s.id !== school.id);
-                if (prev.length < 3) return [...prev, school];
-                return prev;
-              });
-            } else {
-              setSelectedSchool(school);
-              if (handleFlyToRef.current) {
-                handleFlyToRef.current(school);
+          onSchoolSelect={useCallback(
+            (school) => {
+              if (activeMode === 'compare') {
+                if (areaCompareActive) {
+                  const allowed = modeState.analyze.schoolsInRadius.some((s) => s.id === school.id);
+                  if (!allowed) return;
+                }
+                setComparisonSchools((prev) => {
+                  if (prev.find((s) => s.id === school.id)) return prev.filter((s) => s.id !== school.id);
+                  if (prev.length < 3) return [...prev, school];
+                  return prev;
+                });
+              } else {
+                setSelectedSchool(school);
+                if (handleFlyToRef.current) {
+                  handleFlyToRef.current(school);
+                }
               }
-            }
-          }, [activeMode])}
+            },
+            [activeMode, areaCompareActive, modeState.analyze.schoolsInRadius]
+          )}
+          analyzeListHighlightId={modeState.analyze.listFocusSchoolId}
           onMapClick={useCallback((point) => {
             if (activeMode === 'compare') setCompareRefPoint(point);
           }, [activeMode])}
@@ -175,9 +283,7 @@ function App() {
           selectedSchool={selectedSchool}
           comparisonSchools={comparisonSchools}
           mapStyle={mapStyle}
-          setMapStyle={setMapStyle}
           viewMode={viewMode}
-          setViewMode={setViewMode}
           modeState={modeState}
           setModeState={setModeState}
           registerResetMap={(resetFn) => { handleResetMapRef.current = resetFn; }}
@@ -195,14 +301,21 @@ function App() {
           setComparisonSchools={setComparisonSchools}
           showComparePanel={showComparePanel}
           setShowComparePanel={setShowComparePanel}
-          compareRefPoint={compareRefPoint}
+          onRetryLocation={requestNearbySchools}
+          onAreaListSchoolClick={onAreaListSchoolClick}
+          areaCompareActive={areaCompareActive}
         />
 
         {/* The actual Comparison Panel overlaying if expanded */}
         {activeMode === 'compare' && showComparePanel && (
           <ComparisonPanel
             schools={comparisonSchools}
-            referencePoint={compareRefPoint}
+            referencePoint={
+              compareRefPoint ||
+              (areaCompareActive && modeState.analyze.center
+                ? modeState.analyze.center
+                : null)
+            }
             onRemove={(id) => {
               const updated = comparisonSchools.filter(s => s.id !== id);
               setComparisonSchools(updated);
