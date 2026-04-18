@@ -1,97 +1,95 @@
-# 🗺️ Kathmandu School Intelligence Dashboard
+# Kathmandu School Intelligence Dashboard
 
-> An interactive geospatial analytics platform for exploring, analyzing, and comparing schools across the Kathmandu Valley — built on live OpenStreetMap data.
-
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![MapLibre GL JS](https://img.shields.io/badge/MapLibre_GL_JS-5.x-396CB2?logo=maplibre&logoColor=white)](https://maplibre.org/)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38B2AC?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+An interactive geospatial analytics platform for exploring, analyzing, and comparing schools across the Kathmandu Valley, built on live OpenStreetMap data.
 
 ---
 
-## ✨ Overview
+## Overview
 
-The **Kathmandu School Intelligence Dashboard** is a production-quality geospatial web application that fetches live school data from OpenStreetMap's Overpass API, renders it on a high-performance vector map, and exposes a rich set of analytical tools — all within a polished, modern interface.
-
-![Dashboard Preview](./public/preview.png)
+The Kathmandu School Intelligence Dashboard is a production-quality web application that fetches real school data from the OpenStreetMap Overpass API, renders it on a high-performance vector map, and provides a rich set of spatial analysis tools — all within a clean, responsive interface.
 
 ---
 
-## 🚀 Features
+## Features
 
-### 🗺️ Interactive Map
-- **Marker & Heatmap modes** — toggle between individual school pins and a density heatmap visualization to understand spatial distribution at a glance
-- **Satellite / Street toggle** — switch between a clean street basemap and satellite imagery with one click
-- **Smooth fly-to navigation** — clicking any school in the sidebar smoothly animates the map to center on it
+### Map
 
-### 🔍 Filtering & Search
-- **Name-based search** — debounced real-time search that filters the school list and map markers simultaneously
-- **Category filters** — filter by school type: **All · Named · Unnamed · Private · Public · Community · Unknown**
-- **Live count** — the sidebar always shows how many schools match the current filter
+- **Marker view** — individual pins for every school in the dataset, color-coded by type
+- **Heatmap view** — toggle to a density heatmap to visualize geographic clustering
+- **Satellite / Street basemap toggle** — switch between street map and satellite imagery
+- **Smooth fly-to** — selecting a school from the sidebar animates the map to that location
+- **Marker clustering** — nearby markers group at lower zoom levels using Supercluster
 
-### 🛠️ Analysis Modes (Toolbar)
-All modes are accessible from the top toolbar and can be toggled on/off:
+### Filtering and Search
+
+- **Name search** — real-time, debounced search that filters both the sidebar list and map markers
+- **Type filters** — filter schools by: All, Named, Unnamed, Private, Public, Community, Unknown
+- **Live filtered count** — the sidebar always displays how many schools match the current filters
+
+### Analysis Modes
+
+Accessible from the top toolbar. Each mode can be toggled on and off.
 
 | Mode | Description |
 |---|---|
-| 📏 **Measure** | Click two points on the map to calculate the straight-line distance between them |
-| 🔬 **Analyze Area** | Click a center point and set a radius to get school density stats within that area |
-| 📍 **Best Location** | Click any point on the map to find the nearest schools and receive an accessibility score |
-| 📊 **Compare** | Select up to 3 schools for a side-by-side comparison panel |
+| Measure | Click two points on the map to calculate straight-line distance between them |
+| Analyze Area | Click a center point, set a radius, and get school density statistics for that area |
+| Best Location | Click any map point to find the nearest schools and get an accessibility score |
+| Compare | Select up to 3 schools for a side-by-side attribute comparison panel |
 
-### 📈 Statistics & Charts
-- **Stats bar** — total, named, unnamed, private, public, community, and unknown school counts displayed in real time
-- **Charts panel** — interactive Recharts-powered visualizations aggregating the dataset by type and data quality
+### Statistics and Charts
 
-### 🏫 School Details Panel
-- Click any school marker or sidebar entry to open a details panel showing name, type, location, and OSM metadata
+- Real-time stat cards showing total, named, unnamed, private, public, community, and unknown school counts
+- Recharts-powered chart visualizations aggregating the dataset by type and data quality
 
-### ⚡ Performance
-- **LocalStorage caching** — Overpass API data is cached in the browser so repeat visits load instantly without hitting the API again
-- **`useMemo` filtering** — all filter/search operations are memoized to avoid unnecessary re-renders
-- **Supercluster** — marker clustering support for dense areas at lower zoom levels
+### School Details
 
----
+- Clicking any school marker or sidebar entry opens a detail panel showing name, type, coordinates, and OSM metadata
 
-## ⚙️ Tech Stack
+### Performance
 
-| Layer | Technology |
-|---|---|
-| Framework | React 19 (Vite 8) |
-| Map Engine | MapLibre GL JS 5 |
-| Geospatial Utils | @turf/turf, Supercluster |
-| Charts | Recharts |
-| Styling | Tailwind CSS 4, PostCSS |
-| Icons | Lucide React |
-| HTTP | Axios |
-| Routing | React Router DOM 7 |
-| Data Source | OpenStreetMap Overpass API |
+- **LocalStorage caching** — API data is cached in the browser so repeat visits load instantly without re-fetching
+- **Memoized filtering** — all filter and search operations use `useMemo` to avoid unnecessary re-renders
+- **Error handling and retry** — graceful error state with a retry button if the API call fails
 
 ---
 
-## 📦 Getting Started
+## Tech Stack
+
+| Layer | Technology | Version |
+|---|---|---|
+| Framework | React (Vite) | 19 / 8 |
+| Map Engine | MapLibre GL JS | 5.x |
+| Geospatial Utils | @turf/turf | 7.x |
+| Marker Clustering | Supercluster | 8.x |
+| Charts | Recharts | 3.x |
+| Styling | Tailwind CSS | 4.x |
+| Icons | Lucide React | 1.x |
+| HTTP Client | Axios | 1.x |
+| Routing | React Router DOM | 7.x |
+| Data Source | OpenStreetMap Overpass API | — |
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Node.js ≥ 18
-- npm ≥ 9
+
+- Node.js >= 18
+- npm >= 9
 
 ### Installation
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/Sneha-Neupanee/Kathmandu-School-Map.git
 cd Kathmandu-School-Map
-
-# 2. Install dependencies
 npm install
-
-# 3. Start the development server
 npm run dev
 ```
 
-Navigate to **`http://localhost:5173`** in your browser.
+Open `http://localhost:5173` in your browser.
 
-### Build for Production
+### Production Build
 
 ```bash
 npm run build
@@ -100,9 +98,9 @@ npm run preview
 
 ---
 
-## 📡 Data Source
+## Data Source
 
-School data is fetched live from the **OpenStreetMap Overpass API** using the following query:
+School data is fetched from the OpenStreetMap Overpass API:
 
 ```
 [out:json];
@@ -113,43 +111,33 @@ School data is fetched live from the **OpenStreetMap Overpass API** using the fo
 out center;
 ```
 
-> ⚠️ **Note:** Public Overpass endpoints are rate-limited. The app automatically caches results in `localStorage` to minimize API calls. Heavy, repeated refreshing may result in temporary API timeouts.
+> Note: Public Overpass endpoints are rate-limited. The app caches results in `localStorage` to minimize API calls. Excessive refreshing may cause temporary API timeouts.
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 src/
 ├── components/
-│   ├── Map.jsx              # Core MapLibre GL JS map with all layers & interactions
-│   ├── Sidebar.jsx          # School list, search, filters & stats
-│   ├── Toolbar.jsx          # Analysis mode selector + view controls
-│   ├── MapOverlayPanel.jsx  # In-map overlay results for active analysis modes
-│   ├── Charts.jsx           # Recharts-based statistics visualizations
+│   ├── Map.jsx              # MapLibre GL JS map — layers, markers, analysis interactions
+│   ├── Sidebar.jsx          # School list, search input, type filters, stats
+│   ├── Toolbar.jsx          # Analysis mode buttons and map view controls
+│   ├── MapOverlayPanel.jsx  # Overlay UI showing results for active analysis modes
+│   ├── Charts.jsx           # Recharts visualizations
 │   ├── Stats.jsx            # Stat card components
-│   ├── SchoolDetails.jsx    # School detail drawer
+│   ├── SchoolDetails.jsx    # School detail panel
 │   ├── ComparisonPanel.jsx  # Side-by-side school comparison view
-│   └── SearchBar.jsx        # Location search via Nominatim API
+│   └── SearchBar.jsx        # Location geocoding via Nominatim API
 ├── hooks/
-│   └── useSchoolsData.js    # Data fetching, caching, filtering & stats logic
+│   └── useSchoolsData.js    # Data fetching, caching, filtering, stats aggregation
 ├── utils/
-│   ├── overpassQuery.js     # Overpass API fetch logic
-│   └── formatData.js        # Raw OSM data normalization
-├── App.jsx                  # Root layout & shared state
-└── main.jsx                 # App entry point
+│   ├── overpassQuery.js     # Overpass API request logic
+│   └── formatData.js        # Raw OSM data normalization and typing
+├── App.jsx                  # Root layout, shared state, mode management
+└── main.jsx                 # Application entry point
 ```
 
 ---
 
-## 🔭 Roadmap
-
-- [ ] User-defined custom bounding box selection
-- [ ] GeoJSON data export
-- [ ] School detail enrichment via Wikipedia/Wikidata
-- [ ] Routing directions to nearest school (OSRM integration)
-- [ ] Progressive Web App (PWA) support with offline caching
-
----
-
-*Built as a showcase for Geospatial Frontend Engineering — by [Sneha Neupane](https://github.com/Sneha-Neupanee).*
+*Built as a showcase for Geospatial Frontend Engineering.*
