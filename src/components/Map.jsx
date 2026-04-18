@@ -55,10 +55,12 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
     const dataRef = useRef(data);
     const modeStateRef = useRef(modeState);
     const onMapClickRef = useRef(onMapClick);
+    const onSchoolSelectRef = useRef(onSchoolSelect);
     useEffect(() => { activeModeRef.current = activeMode; }, [activeMode]);
     useEffect(() => { dataRef.current = data; }, [data]);
     useEffect(() => { modeStateRef.current = modeState; }, [modeState]);
     useEffect(() => { onMapClickRef.current = onMapClick; }, [onMapClick]);
+    useEffect(() => { onSchoolSelectRef.current = onSchoolSelect; }, [onSchoolSelect]);
     const [clusterer, setClusterer] = useState(null);
     const [clusters, setClusters] = useState([]);
 
@@ -303,7 +305,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                         e.stopPropagation();
                         if (!map.current) return;
                         map.current.flyTo({ center: [lon, lat], zoom: 15 });
-                        if (onSchoolSelect) onSchoolSelect(school);
+                        if (onSchoolSelectRef.current) onSchoolSelectRef.current(school);
                     });
 
                     markersRef.current.push(marker);
@@ -311,7 +313,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
             });
             updateHeatmapLayer(data, viewMode);
         }
-    }, [data, onSchoolSelect, activeMode, clusters, comparisonSchools]);
+    }, [clusters, comparisonSchools, viewMode]);
 
     // Map Click Listener — registered ONCE, reads fresh values via refs
     useEffect(() => {

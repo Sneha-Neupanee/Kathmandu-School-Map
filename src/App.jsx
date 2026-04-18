@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { useSchoolsData } from './hooks/useSchoolsData';
 import Map from './components/Map';
 import Sidebar from './components/Sidebar';
@@ -58,7 +58,7 @@ function App() {
     if (activeMode !== 'default') {
       setSelectedSchool(null);
     }
-    setSearchTerm('');
+    // Do NOT reset searchTerm here — it clears filter context on tab switch
     setComparisonSchools([]);
     setCompareRefPoint(null);
     setShowComparePanel(false);
@@ -74,10 +74,10 @@ function App() {
   const [viewMode, setViewMode] = useState('markers');
 
   return (
-    <div className="flex h-screen w-full overflow-hidden font-sans bg-[#f5f6f8] text-black">
+    <div className="flex h-screen w-full overflow-hidden font-sans bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0] text-slate-800">
 
       {/* Sidebar */}
-      <div className="w-full md:w-80 lg:w-96 flex-shrink-0 z-10 shadow-[10px_0_40px_rgb(0,0,0,0.08)] border-r border-slate-200/60 relative">
+      <div className="w-full md:w-80 lg:w-96 flex-shrink-0 z-10 shadow-[4px_0_24px_rgba(15,23,42,0.04)] border-r border-slate-200/50 relative bg-white/80 backdrop-blur-xl">
         <Sidebar
           stats={stats}
           searchTerm={searchTerm}
@@ -154,7 +154,7 @@ function App() {
         <Map
           data={filteredData}
           registerFlyTo={(flyToFn) => { handleFlyToRef.current = flyToFn; }}
-          onSchoolSelect={(school) => {
+          onSchoolSelect={useCallback((school) => {
             if (activeMode === 'compare') {
               setComparisonSchools(prev => {
                 if (prev.find(s => s.id === school.id)) return prev.filter(s => s.id !== school.id);
@@ -167,10 +167,10 @@ function App() {
                 handleFlyToRef.current(school);
               }
             }
-          }}
-          onMapClick={(point) => {
+          }, [activeMode])}
+          onMapClick={useCallback((point) => {
             if (activeMode === 'compare') setCompareRefPoint(point);
-          }}
+          }, [activeMode])}
           activeMode={activeMode}
           selectedSchool={selectedSchool}
           comparisonSchools={comparisonSchools}
