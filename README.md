@@ -6,7 +6,7 @@ An interactive geospatial analytics platform for exploring, analyzing, and compa
 
 ## Overview
 
-The Kathmandu School Intelligence Dashboard is a production-quality web application that fetches real school data from the OpenStreetMap Overpass API, renders it on a high-performance vector map, and provides a rich set of spatial analysis tools — all within a clean, responsive interface.
+The Kathmandu School Intelligence Dashboard is a production-quality web application that fetches real school data from the OpenStreetMap Overpass API, renders it on a high-performance vector map, and provides a rich set of spatial analysis tools all within a clean, responsive interface.
 
 ---
 
@@ -14,17 +14,17 @@ The Kathmandu School Intelligence Dashboard is a production-quality web applicat
 
 ### Map
 
-- **Marker view** — individual pins for every school in the dataset, color-coded by type
-- **Heatmap view** — toggle to a density heatmap to visualize geographic clustering
-- **Satellite / Street basemap toggle** — switch between street map and satellite imagery
-- **Smooth fly-to** — selecting a school from the sidebar animates the map to that location
-- **Marker clustering** — nearby markers group at lower zoom levels using Supercluster
+- **Marker view** - individual pins for every school in the dataset, color-coded by type
+- **Heatmap view** - toggle to a density heatmap to visualize geographic clustering
+- **Satellite / Street basemap toggle** - switch between street map and satellite imagery
+- **Smooth fly-to** - selecting a school from the sidebar animates the map to that location
+- **Marker clustering** - nearby markers group at lower zoom levels using Supercluster
 
 ### Filtering and Search
 
-- **Name search** — real-time, debounced search that filters both the sidebar list and map markers
-- **Type filters** — filter schools by: All, Named, Unnamed, Private, Public, Community, Unknown
-- **Live filtered count** — the sidebar always displays how many schools match the current filters
+- **Name search** - real-time, debounced search that filters both the sidebar list and map markers
+- **Type filters** - filter schools by: All, Named, Unnamed, Private, Public, Community, Unknown
+- **Live filtered count** - the sidebar always displays how many schools match the current filters
 
 ### Analysis Modes
 
@@ -48,9 +48,9 @@ Accessible from the top toolbar. Each mode can be toggled on and off.
 
 ### Performance
 
-- **LocalStorage caching** — API data is cached in the browser so repeat visits load instantly without re-fetching
-- **Memoized filtering** — all filter and search operations use `useMemo` to avoid unnecessary re-renders
-- **Error handling and retry** — graceful error state with a retry button if the API call fails
+- **LocalStorage caching** - API data is cached in the browser so repeat visits load instantly without re-fetching
+- **Memoized filtering** - all filter and search operations use `useMemo` to avoid unnecessary re-renders
+- **Error handling and retry** - graceful error state with a retry button if the API call fails
 
 ---
 
