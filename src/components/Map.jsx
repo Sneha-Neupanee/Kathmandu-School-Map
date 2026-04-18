@@ -339,7 +339,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                         </div>
                     `;
 
-                    const popup = new maplibregl.Popup({ offset: 15, closeButton: true, closeOnClick: true })
+                    const popup = new maplibregl.Popup({ offset: 15, closeButton: true, closeOnClick: true, className: 'map-school-popup' })
                         .setHTML(popupHtml);
 
                     const marker = new maplibregl.Marker({ element: el })
@@ -475,7 +475,8 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                     closeButton: true,
                     closeOnClick: false,
                     offset: 20,
-                    maxWidth: '300px'
+                    maxWidth: '300px',
+                    className: 'map-best-location-popup',
                 })
                     .setLngLat([lng, lat])
                     .setHTML(popupHtml)
@@ -517,7 +518,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
 
                     const distanceStr = minDistance > 1 ? minDistance.toFixed(2) + ' km' : Math.round(minDistance * 1000) + ' m';
 
-                    nearestPopupRef.current = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 15, className: 'maplibre-gl-popup-z' })
+                    nearestPopupRef.current = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 15, className: 'maplibre-gl-popup-z map-nearest-insight-popup' })
                         .setLngLat([lng, lat])
                         .setHTML(`
                             <div class="font-sans text-xs min-w-40 z-50">

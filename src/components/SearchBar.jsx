@@ -31,7 +31,7 @@ export default function SearchBar({ searchTerm, onSearch, exactMatchAction }) {
     };
 
     return (
-        <div className="relative flex items-center border border-slate-300 rounded-lg bg-slate-100 transition-all shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+        <div data-tour="search-name" className="relative flex items-center border border-slate-300 rounded-lg bg-slate-100 transition-all shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
             <input
                 type="text"
                 className="block w-full pl-3 pr-20 py-2.5 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"

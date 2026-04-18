@@ -7,9 +7,6 @@ import { Lightbulb } from 'lucide-react';
    Works in both light and dark contexts.
 ───────────────────────────────────────────── */
 const themeStyle = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Lora:wght@500;600&display=swap');
-  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap');
-
   .charts-root {
     --card-bg: #ffffff;
     --card-border: #e2e8f0;
@@ -55,7 +52,7 @@ const themeStyle = `
   .charts-root .chart-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: 20px;
+    border-radius: 24px;
     box-shadow: var(--card-shadow);
     overflow: hidden;
     transition: box-shadow 0.25s ease;
@@ -71,17 +68,16 @@ const themeStyle = `
   }
 
   .charts-root .chart-heading {
-    font-family: 'DM Serif Display', Georgia, serif;
+    font-family: inherit;
     font-size: 1.05rem;
-    font-weight: 400;
-    letter-spacing: 0.01em;
+    font-weight: 650;
+    letter-spacing: -0.01em;
     color: var(--heading-color);
     margin: 0;
     line-height: 1.2;
   }
 
   .charts-root .chart-subcount {
-    font-family: 'DM Sans', sans-serif;
     font-size: 0.72rem;
     font-weight: 600;
     color: var(--label-color);
@@ -118,14 +114,14 @@ const themeStyle = `
   }
 
   .charts-root .insight-title {
-    font-family: 'DM Serif Display', Georgia, serif;
+    font-family: inherit;
     font-size: 0.92rem;
+    font-weight: 650;
     color: var(--heading-color);
     margin-bottom: 2px;
   }
 
   .charts-root .insight-body {
-    font-family: 'DM Sans', sans-serif;
     font-size: 0.8rem;
     color: var(--label-color);
     line-height: 1.5;
@@ -154,14 +150,16 @@ function ActiveShape3D({ palette }) {
   return function renderActiveShape(props) {
     const {
       cx, cy, innerRadius, outerRadius,
-      startAngle, endAngle, payload
+      startAngle, endAngle, midAngle, payload
     } = props;
 
     // Depend on payload.fill which is the raw un-gradiented original color
     const colors = palette.find(p => p.base === payload.fill) || palette[0];
 
-    // Exponential growth scale
-    const scale = 1.35;
+    const RADIAN = Math.PI / 180;
+    const offset = 10;
+    const x = cx + Math.cos(-midAngle * RADIAN) * offset;
+    const y = cy + Math.sin(-midAngle * RADIAN) * offset;
 
     return (
       <g>
@@ -176,19 +174,17 @@ function ActiveShape3D({ palette }) {
           fill="#00000020"
         />
 
-        {/* MAIN ACTIVE SLICE (SCALED VISUALLY) */}
-        <g transform={`scale(${scale})`}>
-          <Sector
-            cx={cx / scale}
-            cy={cy / scale}
-            innerRadius={innerRadius}
-            outerRadius={outerRadius}
-            startAngle={startAngle}
-            endAngle={endAngle}
-            fill={colors.dark}
-            style={{ filter: `drop-shadow(0 6px 16px ${colors.base}88)` }}
-          />
-        </g>
+        {/* MAIN ACTIVE SLICE (offset + larger) */}
+        <Sector
+          cx={x}
+          cy={y}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius + 12}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={colors.dark}
+          style={{ filter: `drop-shadow(0 8px 18px ${colors.base}88)` }}
+        />
       </g>
     );
   };
@@ -204,13 +200,13 @@ function CustomCenterLabel({ activeEntry, total }) {
 
   return (
     <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle">
-      <tspan x="50%" dy="-10" style={{ fontFamily: '"Sora", sans-serif', fontSize: '1.6rem', fontWeight: 700, fill: 'var(--heading-color, #0f172a)' }}>
+      <tspan x="50%" dy="-10" style={{ fontFamily: 'inherit', fontSize: '1.6rem', fontWeight: 700, fill: 'var(--heading-color, #0f172a)' }}>
         {pct}%
       </tspan>
-      <tspan x="50%" dy="22" style={{ fontFamily: '"DM Sans", sans-serif', fontSize: '0.65rem', fill: 'var(--label-color, #64748b)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <tspan x="50%" dy="22" style={{ fontFamily: 'inherit', fontSize: '0.65rem', fill: 'var(--label-color, #64748b)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {activeEntry.name}
       </tspan>
-      <tspan x="50%" dy="16" style={{ fontFamily: '"DM Sans", sans-serif', fontSize: '0.75rem', fill: 'var(--label-color, #64748b)' }}>
+      <tspan x="50%" dy="16" style={{ fontFamily: 'inherit', fontSize: '0.75rem', fill: 'var(--label-color, #64748b)' }}>
         {activeEntry.value.toLocaleString()} schools
       </tspan>
     </text>
@@ -305,7 +301,7 @@ function DonutChart({ data, palette, total }) {
       </div>
 
       {/* ── Right Side: Chart Only ── */}
-      <div style={{ width: '220px', height: '220px', pointerEvents: 'none', flexShrink: 0 }}>
+      <div style={{ width: '220px', height: '220px', flexShrink: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <defs>{gradientDefs}</defs>
@@ -321,6 +317,9 @@ function DonutChart({ data, palette, total }) {
               activeShape={activeShape}
               startAngle={90}
               endAngle={-270}
+              onMouseEnter={(_, idx) => setActiveIndex(idx)}
+              animationDuration={420}
+              isAnimationActive
             >
               {coloredData.map((entry, index) => (
                 <Cell
@@ -328,9 +327,9 @@ function DonutChart({ data, palette, total }) {
                   fill={entry.gradientFill}
                   style={{
                     opacity: activeIndex === index ? 1 : 0.85,
-                    transform: activeIndex === index ? 'scale(1)' : 'scale(0.96)',
+                    transform: activeIndex === index ? 'scale(1.03)' : 'scale(0.95)',
                     transformOrigin: 'center',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.35s ease'
                   }}
                 />
               ))}

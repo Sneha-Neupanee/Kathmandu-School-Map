@@ -27,8 +27,14 @@ export default function Sidebar({
                         <School className="w-5 h-5 text-white/90" />
                     </div>
                     <div className="flex-1">
-                        <h1 className="text-lg font-bold text-slate-900 tracking-tight">KTM Schools</h1>
-                        <p className="text-[11px] text-slate-500 font-medium tracking-wide">Intelligence Dashboard</p>
+                        <div className="inline-flex items-center gap-2 rounded-xl px-2.5 py-1">
+                            <h1 className="text-xl font-bold tracking-wide text-slate-900">
+                                Kathmandu <span className="font-semibold text-slate-700">SchoolAtlas</span>
+                            </h1>
+                        </div>
+                        <p className="mt-0.5 text-[11px] font-medium tracking-wider text-slate-500 leading-relaxed">
+                            Intelligence Dashboard
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
@@ -91,9 +97,9 @@ export default function Sidebar({
                     )}
 
                     {/* Filter Section */}
-                    <div>
+                    <div data-tour="filters">
                         {/* Header */}
-                        <label className="block text-sm font-extrabold text-slate-900 uppercase tracking-wider mb-2.5">
+                        <label className="mb-2.5 block text-sm font-semibold uppercase tracking-tight text-slate-900">
                             Filter Schools
                         </label>
 
@@ -183,7 +189,7 @@ export default function Sidebar({
                     </div>
                 ) : (
                     <>
-                        <div className="p-5">
+                        <div className="p-5" data-tour="analytics-section">
                             <Stats stats={stats} filteredCount={filteredCount} />
                         </div>
                     </>

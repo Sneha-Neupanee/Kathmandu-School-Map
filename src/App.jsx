@@ -6,6 +6,7 @@ import SchoolDetails from './components/SchoolDetails';
 import Toolbar from './components/Toolbar';
 import MapOverlayPanel from './components/MapOverlayPanel';
 import ComparisonPanel from './components/ComparisonPanel';
+import SchoolAtlasTour from './components/SchoolAtlasTour';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { DEFAULT_RADIUS_KM, stripDistanceKm } from './utils/analyzeArea';
 
@@ -17,6 +18,7 @@ const emptyAnalyze = () => ({
   schoolsInRadius: [],
   nearestSchool: null,
   showSchoolList: false,
+  showBreakdown: false,
   locationError: null,
   listFocusSchoolId: null,
 });
@@ -325,6 +327,7 @@ function App() {
           />
         )}
 
+        <SchoolAtlasTour />
       </div>
     </div>
   );

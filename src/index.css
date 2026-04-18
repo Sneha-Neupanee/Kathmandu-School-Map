@@ -1,8 +1,10 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   body {
-    @apply transition-colors duration-300 m-0 p-0 font-sans;
+    @apply transition-colors duration-300 m-0 p-0;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   }
 }
 
@@ -19,37 +21,182 @@
   }
 }
 
-/* Selected school popup styling */
+/* Unified popup card styling across map modes */
+.maplibregl-popup .maplibregl-popup-content,
+.map-school-popup .maplibregl-popup-content,
+.map-nearest-insight-popup .maplibregl-popup-content,
+.map-best-location-popup .maplibregl-popup-content,
 .selected-school-popup .maplibregl-popup-content {
-  border-radius: 10px !important;
-  padding: 12px 14px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
-  border: 1.5px solid #dbeafe !important;
-}
-
-
-/* MapLibre popup */
-.maplibre-gl-popup-content {
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  border: 0 !important;
-  background: #fff;
-  padding: 16px;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  background: #ffffff !important;
+  padding: 14px 46px 14px 16px !important;
   min-width: 200px;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
+.maplibregl-popup .maplibregl-popup-content h3,
+.maplibregl-popup .maplibregl-popup-content h4 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.maplibregl-popup .maplibregl-popup-content p {
+  line-height: 1.4;
+}
+
+/* Global MapLibre close button override (note: class name is maplibregl-*) */
+.maplibregl-popup-close-button,
 .maplibre-gl-popup-close-button {
-  color: #94a3b8;
-  font-size: 1.1rem;
-  padding: 8px;
-  top: 4px;
-  right: 4px;
+  color: #ffffff !important;
+  font-size: 1.05rem !important;
+  line-height: 1;
+  font-weight: 700;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px;
+  min-height: 32px;
+  top: 8px !important;
+  right: 8px !important;
+  border-radius: 9999px;
+  background: #f87171 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
+.maplibregl-popup-close-button:hover,
 .maplibre-gl-popup-close-button:hover {
-  color: #475569;
+  background: #ef4444 !important;
+  transform: scale(1.01); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
 }
 
+/* Keep popups above map layers and most overlays */
 .maplibregl-popup {
-  z-index: 50 !important;
+  z-index: 45 !important;
+}
+
+.schoolatlas-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  animation: schoolatlas-fade-in 220ms ease;
+}
+
+.schoolatlas-tour__advance {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.schoolatlas-tour__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.66);
+  backdrop-filter: blur(5px);
+  transition: opacity 220ms ease;
+}
+
+.schoolatlas-tour__overlay--clear {
+  background: rgba(2, 6, 23, 0);
+  backdrop-filter: blur(0);
+}
+
+.schoolatlas-tour__spotlight {
+  position: fixed;
+  border-radius: 12px;
+  border: 2px solid rgba(56, 189, 248, 0.95);
+  box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.66), 0 0 0 4px rgba(56, 189, 248, 0.2), 0 10px 30px rgba(56, 189, 248, 0.35);
+  transition: all 260ms ease;
+  pointer-events: none;
+}
+
+.schoolatlas-tour__tooltip {
+  position: fixed;
+  max-width: min(420px, calc(100vw - 2rem));
+  background: rgba(15, 23, 42, 0.95);
+  color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 12px 36px rgba(2, 6, 23, 0.4);
+  backdrop-filter: blur(6px);
+  z-index: 62;
+  pointer-events: none;
+  transition: top 260ms ease, left 260ms ease;
+}
+
+.schoolatlas-tour__tooltip p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.schoolatlas-tour__tooltip span {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.schoolatlas-tour__skip {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 63;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.88);
+  color: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.48rem 0.9rem;
+  cursor: pointer;
+  transition: transform 180ms ease, background-color 180ms ease;
+}
+
+.schoolatlas-tour__skip:hover {
+  transform: translateY(-1px);
+  background: rgba(30, 41, 59, 0.95);
+}
+
+.schoolatlas-tour__arrow {
+  position: fixed;
+  z-index: 63;
+  transform: translateX(-50%);
+  color: #38bdf8;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.75);
+  font-size: 1.55rem;
+  font-weight: 700;
+  animation: schoolatlas-arrow-bounce 850ms ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes schoolatlas-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes schoolatlas-arrow-bounce {
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, -6px);
+  }
 }
