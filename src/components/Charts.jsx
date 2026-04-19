@@ -416,7 +416,7 @@ export default function Charts({ stats }) {
           <p className="insight-body">
             {stats.unnamed > stats.named
               ? 'A majority of schools lack proper names. Focused mapping and data collection efforts are highly recommended.'
-              : `Data quality is strong — ${namedPct}% of queried schools carry valid names, reflecting solid record-keeping.`}
+              : `Data quality is strong, ${namedPct}% of queried schools carry valid names, reflecting solid record-keeping.`}
           </p>
         </div>
       </div>
