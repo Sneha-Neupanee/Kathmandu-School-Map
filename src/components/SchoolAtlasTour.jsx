@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 import img1 from '../assets/11.png';
 import img2 from '../assets/22.png';
@@ -7,104 +8,78 @@ import img4 from '../assets/44.png';
 
 const IMAGES = [img1, img2, img3, img4];
 
-export default function SchoolAtlasTour({
-  onDismiss,
-  dismissedStorageKey = 'schoolAtlasTourDismissed_v2',
-}) {
+/** Inline z-index so the overlay is never dropped by Tailwind purge (dynamic class strings are not scanned). */
+const Z_OVERLAY = 2147483645;
+const Z_OVERLAY_CHILD = 2147483646;
+
+const shellStyle = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: Z_OVERLAY,
+  margin: 0,
+  padding: 0,
+};
+
+export default function SchoolAtlasTour({ onClose }) {
   const [phase, setPhase] = useState('welcome');
   const [imgIndex, setImgIndex] = useState(0);
 
-  const markTourSeen = useCallback(() => {
-    try {
-      localStorage.removeItem('hasSeenSchoolAtlasTour');
-      localStorage.setItem(dismissedStorageKey, 'true');
-    } catch {
-      // ignore (e.g. storage unavailable)
-    }
-    onDismiss?.();
-  }, [dismissedStorageKey, onDismiss]);
-
-  const finish = useCallback(() => {
-    setPhase('done');
-    markTourSeen();
-  }, [markTourSeen]);
+  const handleFinish = useCallback(() => {
+    onClose();
+  }, [onClose]);
 
   const nextImage = useCallback(() => {
-    setImgIndex((prev) => {
-      if (prev + 1 >= IMAGES.length) {
-        queueMicrotask(() => {
-          setPhase('done');
-          markTourSeen();
-        });
-        return prev;
-      }
-      return prev + 1;
-    });
-  }, [markTourSeen]);
+    if (imgIndex + 1 >= IMAGES.length) {
+      onClose();
+      return;
+    }
+    setImgIndex((i) => i + 1);
+  }, [imgIndex, onClose]);
 
-  if (phase === 'done') return null;
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const body = document.body;
+  if (!body) {
+    return null;
+  }
 
   // ── Welcome Screen ──────────────────────────────────────────────
   if (phase === 'welcome') {
-    return (
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 2147483000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(0,0,0,0.55)',
-      }}>
-        <div style={{
-          background: '#fff',
-          borderRadius: '20px',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
-          padding: '40px 36px',
+    return createPortal(
+      <div
+        style={{
+          ...shellStyle,
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          gap: '28px',
-          maxWidth: '360px',
-          width: '90%',
-        }}>
+          justifyContent: 'center',
+          background: 'rgba(0, 0, 0, 0.5)',
+        }}
+      >
+        <div
+          className="flex w-[90%] max-w-[360px] flex-col items-center gap-7 rounded-[20px] bg-white p-9 shadow-[0_8px_40px_rgba(0,0,0,0.18)]"
+          style={{ position: 'relative', zIndex: Z_OVERLAY_CHILD }}
+        >
 
-          {/* Icon */}
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
 
-          {/* Text */}
-          <div style={{ textAlign: 'center' }}>
-            <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#000', margin: '0 0 8px 0', lineHeight: 1.3 }}>
+          <div className="text-center">
+            <h1 className="m-0 mb-2 text-[22px] font-bold leading-snug text-black">
               Welcome to<br />Kathmandu SchoolAtlas
             </h1>
-            <p style={{ fontSize: '14px', color: '#888', margin: 0 }}>
+            <p className="m-0 text-sm text-neutral-500">
               Would you like a quick tour of the features?
             </p>
           </div>
 
-          {/* Buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+          <div className="flex w-full flex-col gap-3">
             <button
-              style={{
-                width: '100%',
-                background: '#000',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '14px',
-                padding: '14px',
-                fontSize: '15px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              }}
+              type="button"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border-0 bg-black px-3.5 py-3.5 text-[15px] font-semibold text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
               onClick={() => { setImgIndex(0); setPhase('guide'); }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -114,48 +89,57 @@ export default function SchoolAtlasTour({
               Guide Me
             </button>
             <button
-              style={{
-                width: '100%',
-                background: '#f0f0f0',
-                color: '#000',
-                border: 'none',
-                borderRadius: '14px',
-                padding: '14px',
-                fontSize: '15px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
-              onClick={finish}
+              type="button"
+              className="w-full cursor-pointer rounded-[14px] border-0 bg-neutral-100 px-3.5 py-3.5 text-[15px] font-semibold text-black"
+              onClick={handleFinish}
             >
               Skip
             </button>
           </div>
 
         </div>
-      </div>
+      </div>,
+      body
     );
   }
 
   // ── Guide / Image Slideshow ─────────────────────────────────────
-  return (
+  return createPortal(
     <div
-      style={{
-        position: 'fixed',
-        top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 2147483000,
-        cursor: 'pointer',
-        margin: 0,
-        padding: 0,
-      }}
+      style={{ ...shellStyle, cursor: 'pointer' }}
       onClick={nextImage}
     >
-      {/* Full screen image */}
+      <button
+        type="button"
+        style={{
+          position: 'fixed',
+          top: 20,
+          right: 20,
+          zIndex: Z_OVERLAY_CHILD,
+          cursor: 'pointer',
+          borderRadius: 9999,
+          border: '1px solid rgba(255,255,255,0.25)',
+          background: 'rgba(0,0,0,0.65)',
+          color: '#fff',
+          padding: '10px 18px',
+          fontSize: 14,
+          fontWeight: 600,
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleFinish();
+        }}
+      >
+        Finish
+      </button>
+
       <img
         src={IMAGES[imgIndex]}
         alt={`Tour step ${imgIndex + 1}`}
         style={{
           position: 'fixed',
-          top: 0, left: 0,
+          left: 0,
+          top: 0,
           width: '100vw',
           height: '100vh',
           objectFit: 'cover',
@@ -167,61 +151,66 @@ export default function SchoolAtlasTour({
         draggable={false}
       />
 
-      {/* Step dots */}
-      <div style={{
-        position: 'fixed',
-        bottom: '110px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        gap: '8px',
-        pointerEvents: 'none',
-        zIndex: 2147483001,
-      }}>
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 110,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: 8,
+          pointerEvents: 'none',
+          zIndex: Z_OVERLAY_CHILD,
+        }}
+      >
         {IMAGES.map((_, i) => (
-          <div key={i} style={{
-            width: i === imgIndex ? '24px' : '8px',
-            height: '8px',
-            borderRadius: '999px',
-            background: i === imgIndex ? '#fff' : 'rgba(255,255,255,0.4)',
-            transition: 'all 0.3s ease',
-          }} />
+          <div
+            key={i}
+            style={{
+              width: i === imgIndex ? 24 : 8,
+              height: 8,
+              borderRadius: 999,
+              background: i === imgIndex ? '#fff' : 'rgba(255,255,255,0.4)',
+              transition: 'all 0.3s ease',
+            }}
+          />
         ))}
       </div>
 
-      {/* Tap hint bar */}
-      <div style={{
-        position: 'fixed',
-        bottom: '40px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        pointerEvents: 'none',
-        zIndex: 2147483001,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        background: 'rgba(0,0,0,0.75)',
-        color: '#fff',
-        fontSize: '15px',
-        fontWeight: '600',
-        padding: '13px 28px',
-        borderRadius: '999px',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        border: '1.5px solid rgba(255,255,255,0.2)',
-        whiteSpace: 'nowrap',
-        letterSpacing: '0.01em',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-      }}>
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 40,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          pointerEvents: 'none',
+          zIndex: Z_OVERLAY_CHILD,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          whiteSpace: 'nowrap',
+          borderRadius: 9999,
+          border: '1.5px solid rgba(255,255,255,0.2)',
+          background: 'rgba(0,0,0,0.75)',
+          color: '#fff',
+          fontSize: 15,
+          fontWeight: 600,
+          padding: '13px 28px',
+          letterSpacing: '0.01em',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 11V6a3 3 0 0 1 6 0v5" />
           <path d="M9 11H6a3 3 0 0 0-3 3v1a8 8 0 0 0 16 0v-4a3 3 0 0 0-3-3h-1" />
         </svg>
         Tap anywhere to continue
-        <span style={{ opacity: 0.55, fontWeight: '400', fontSize: '13px' }}>
+        <span style={{ opacity: 0.55, fontWeight: 400, fontSize: 13 }}>
           {imgIndex + 1} / {IMAGES.length}
         </span>
       </div>
-    </div>
+    </div>,
+    body
   );
 }

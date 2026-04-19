@@ -252,7 +252,7 @@ export default function MapOverlayPanel({
                                                     <li key={s.id} className="text-xs bg-slate-50 border border-slate-200 p-1.5 rounded-lg flex justify-between items-center">
                                                         <span className="truncate font-medium text-slate-700">{s.name}</span>
                                                         <button onClick={() => setComparisonSchools((prev) => prev.filter((sc) => sc.id !== s.id))} className="ml-2 p-1 rounded-md bg-red-100 text-red-700 hover:bg-red-100 transition-colors">
-                                                            ×
+                                                            {'\u00d7'}
                                                         </button>
                                                     </li>
                                                 ))}
