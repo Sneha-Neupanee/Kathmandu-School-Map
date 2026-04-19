@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useSchoolsData } from './hooks/useSchoolsData';
 import Map from './components/Map';
 import Sidebar from './components/Sidebar';
@@ -9,6 +10,18 @@ import ComparisonPanel from './components/ComparisonPanel';
 import SchoolAtlasTour from './components/SchoolAtlasTour';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { DEFAULT_RADIUS_KM, stripDistanceKm } from './utils/analyzeArea';
+
+/** Tour persistence: bumped from hasSeenSchoolAtlasTour so users stuck after earlier builds can see the tour again. */
+const TOUR_DISMISSED_KEY = 'schoolAtlasTourDismissed_v2';
+
+function readShouldShowAtlasTour() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(TOUR_DISMISSED_KEY) !== 'true';
+  } catch {
+    return true;
+  }
+}
 
 const emptyAnalyze = () => ({
   center: null,
@@ -45,6 +58,8 @@ function App() {
   const [comparisonSchools, setComparisonSchools] = useState([]);
   const [compareRefPoint, setCompareRefPoint] = useState(null);
   const [showComparePanel, setShowComparePanel] = useState(false);
+
+  const [showTour, setShowTour] = useState(readShouldShowAtlasTour);
 
   const [modeState, setModeState] = useState({
     measure: { start: null, end: null, distance: null },
@@ -175,6 +190,7 @@ function App() {
   const sidebarSchools = compareSchoolPool;
 
   return (
+    <>
     <div className="flex h-screen w-full overflow-hidden font-sans bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0] text-slate-800">
 
       {/* Sidebar */}
@@ -327,9 +343,17 @@ function App() {
           />
         )}
 
-        <SchoolAtlasTour />
       </div>
     </div>
+    {showTour &&
+      createPortal(
+        <SchoolAtlasTour
+          dismissedStorageKey={TOUR_DISMISSED_KEY}
+          onDismiss={() => setShowTour(false)}
+        />,
+        document.body
+      )}
+    </>
   );
 }
 
