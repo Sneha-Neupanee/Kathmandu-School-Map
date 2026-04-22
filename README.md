@@ -10,31 +10,31 @@ A powerful, interactive mapping and analytics dashboard designed to explore, ana
 
 ---
 
-##  Key Features
+## Key Features
 
-###  Interactive Map Explorer
+### Interactive Map Explorer
 - **High-Performance Rendering**: Built on MapLibre GL JS with seamless vector tiles, satellite, and street basemaps.
 - **Dynamic Clustering & Aggregation**: Uses `supercluster` for smooth, responsive marker clustering at varying zoom levels.
 - **Density Visualization Layers**: Advanced layer-based density system allowing users to exclusively filter and highlight high, medium, and low-density school clusters without permanently mutating the underlying dataset.
 
-###  Advanced Search & Location Analysis
+### Advanced Search & Location Analysis
 - **Geolocation Intelligence**: Utilize the browser's Geolocation API to find and analyze schools near your exact current location (defaulting to a 0.5 km radius).
 - **Nominatim Integration**: Search for specific areas or addresses with automatic map panning and bounding box zooming.
 - **Area & Distance Tools**: Built-in modes to measure distances between points, determine the best locations, and analyze custom radii.
 
-###  Real-Time Analytics & Filters
+### Real-Time Analytics & Filters
 - **Non-Destructive Filtering**: Robust filtering capabilities by school type (Public, Private, Community) that seamlessly updates the map layer and secondary charts.
 - **Analytics Dashboard**: Synchronized visualizations (powered by Recharts) showing aggregate statistics, distributions, and demographic comparisons.
 - **Multi-School Comparison**: Select multiple schools from the map to compare proximity, type, and specific details side-by-side.
 
-###  Modern UI / UX
+### Modern UI / UX
 - **Refined Data Interface**: Clean, accessible sidebar layout combining filters, search, and school lists without layout overlapping. Defaulting to a bright, crisp Light Mode.
 - **First-Time Guided Tour**: Integrated `SchoolAtlasTour` context that gracefully onboards new users with a one-time walkthrough. (Easily reset via `localStorage`).
 - **Production-Ready Theming**: Deeply integrated with Tailwind CSS v4 for optimized, consistent styling across components and overlays.
 
 ---
 
-##  Technology Stack
+## Technology Stack
 
 | Category | Technology |
 |---|---|
@@ -48,7 +48,7 @@ A powerful, interactive mapping and analytics dashboard designed to explore, ana
 
 ---
 
-##  Project Structure
+## Project Structure
 
 ```text
 Kathmandu School/
@@ -67,7 +67,7 @@ Kathmandu School/
 
 ---
 
-##  Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 18 or newer
@@ -113,13 +113,13 @@ npm run lint
 
 ---
 
-##  Data Strategy & Performance
+## Data Strategy & Performance
 
 To guarantee performance and reduce API rate-limiting issues from public endpoints, this project employs an aggressive client-side caching mechanism via `localStorage`. The primary dataset is fetched once per session via Overpass API, normalized via `useSchoolsData`, and persisted. Subsequent spatial filters, density switches, and type toggles are handled purely client-side without extra network traffic.
 
 ---
 
-##  Routing Architecture
+## Routing Architecture
 
 The application is structured as a Single Page Application (SPA) using React Router DOM:
 
