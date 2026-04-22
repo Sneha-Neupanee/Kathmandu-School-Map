@@ -69,7 +69,7 @@ export default function SchoolAtlasTour({ onClose }) {
 
           <div className="text-center">
             <h1 className="m-0 mb-2 text-[22px] font-bold leading-snug text-black">
-              Welcome to<br />Kathmandu SchoolAtlas
+              Welcome to<br />Kathmandu Valley SchoolAtlas
             </h1>
             <p className="m-0 text-sm text-neutral-500">
               Would you like a quick tour of the features?

@@ -7,6 +7,7 @@ import MapOverlayPanel from './components/MapOverlayPanel';
 import ComparisonPanel from './components/ComparisonPanel';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { DEFAULT_RADIUS_KM, stripDistanceKm } from './utils/analyzeArea';
+import { useLocation } from 'react-router-dom';
 
 const emptyAnalyze = () => ({
   center: null,
@@ -23,6 +24,7 @@ const emptyAnalyze = () => ({
 
 export default function MapPage() {
   const {
+    data,
     filteredData,
     stats,
     isLoading,
@@ -33,6 +35,7 @@ export default function MapPage() {
     setFilterType,
     retry,
   } = useSchoolsData();
+  const location = useLocation();
 
   const handleFlyToRef = useRef(null);
   const handleResetMapRef = useRef(null);
@@ -159,6 +162,63 @@ export default function MapPage() {
   const [mapStyle, setMapStyle] = useState('light');
   const [viewMode, setViewMode] = useState('markers');
 
+  const getDensityTarget = useCallback((schools, densityLevel) => {
+    if (!Array.isArray(schools) || schools.length === 0) return null;
+    const cellSize = 0.01;
+    const bins = new Map();
+    for (const school of schools) {
+      if (typeof school?.lat !== 'number' || typeof school?.lon !== 'number') continue;
+      const latKey = Math.floor(school.lat / cellSize);
+      const lonKey = Math.floor(school.lon / cellSize);
+      const key = `${latKey}:${lonKey}`;
+      const existing = bins.get(key) || { count: 0, latSum: 0, lonSum: 0 };
+      existing.count += 1;
+      existing.latSum += school.lat;
+      existing.lonSum += school.lon;
+      bins.set(key, existing);
+    }
+    const cells = Array.from(bins.values()).sort((a, b) => b.count - a.count);
+    if (cells.length === 0) return null;
+
+    const index =
+      densityLevel === 'high'
+        ? 0
+        : densityLevel === 'medium'
+          ? Math.min(cells.length - 1, Math.floor(cells.length / 2))
+          : cells.length - 1;
+    const picked = cells[index];
+    return {
+      lat: picked.latSum / picked.count,
+      lng: picked.lonSum / picked.count,
+      radius: densityLevel === 'high' ? 0.8 : densityLevel === 'medium' ? 1.1 : 1.5,
+    };
+  }, []);
+
+  const handleDensityFocus = useCallback((densityLevel) => {
+    const target = getDensityTarget(data, densityLevel);
+    if (!target) return;
+    setActiveMode('analyze');
+    setModeState((m) => ({
+      ...m,
+      analyze: {
+        ...emptyAnalyze(),
+        center: { lat: target.lat, lng: target.lng },
+        radius: target.radius,
+      },
+    }));
+    if (handleFlyToLocationRef.current) {
+      handleFlyToLocationRef.current({ lat: target.lat, lng: target.lng });
+    }
+  }, [data, getDensityTarget]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const density = params.get('density');
+    if (density === 'high' || density === 'medium' || density === 'low') {
+      handleDensityFocus(density);
+    }
+  }, [location.search, handleDensityFocus]);
+
   const onAreaListSchoolClick = useCallback((school) => {
     setModeState((m) => ({
       ...m,
@@ -183,7 +243,6 @@ export default function MapPage() {
           setSearchTerm={setSearchTerm}
           filterType={filterType}
           setFilterType={setFilterType}
-          filteredCount={sidebarSchools.length}
           onSchoolSelect={(school) => {
             if (activeMode === 'compare') {
               if (areaCompareActive) {
@@ -207,6 +266,7 @@ export default function MapPage() {
           selectedSchool={selectedSchool}
           onCloseDetails={() => setSelectedSchool(null)}
           resetView={resetView}
+          onDensityFocus={handleDensityFocus}
         />
       </div>
 

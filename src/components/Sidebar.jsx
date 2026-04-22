@@ -1,6 +1,5 @@
 import React from 'react';
 import SearchBar from './SearchBar';
-import Stats from './Stats';
 import { School, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SchoolDetails from './SchoolDetails';
@@ -11,12 +10,12 @@ export default function Sidebar({
     setSearchTerm,
     filterType,
     setFilterType,
-    filteredCount,
     onSchoolSelect,
     schools,
     selectedSchool,
     onCloseDetails,
-    resetView
+    resetView,
+    onDensityFocus,
 }) {
     return (
         <div className="flex flex-col h-full bg-gradient-to-br from-slate-50/60 to-slate-100/60 backdrop-blur-md z-20 relative shadow-[16px_0_48px_rgba(15,23,42,0.1),inset_-1px_0_0_rgba(255,255,255,0.6)] border-r border-slate-300/30">
@@ -29,7 +28,7 @@ export default function Sidebar({
                     <div className="flex-1">
                         <div className="inline-flex items-center gap-2 rounded-xl px-2.5 py-1">
                             <h1 className="text-xl font-bold tracking-wide text-slate-900">
-                                Kathmandu <span className="font-semibold text-slate-700">SchoolAtlas</span>
+                                Kathmandu Valley <span className="font-semibold text-slate-700">SchoolAtlas</span>
                             </h1>
                         </div>
                         <p className="mt-0.5 text-[11px] font-medium tracking-wider text-slate-500 leading-relaxed">
@@ -178,6 +177,34 @@ export default function Sidebar({
 
                         </div>
                     </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+                    <h3 className="text-sm font-semibold tracking-tight text-slate-900">School Density Explorer</h3>
+                    <p className="mt-1 text-[11px] text-slate-500">Jump to high, medium, or low density school zones.</p>
+                    <div className="mt-3 space-y-2.5">
+                        <button
+                            type="button"
+                            onClick={() => onDensityFocus?.('high')}
+                            className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-left text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                        >
+                            HIGH DENSITY SCHOOL AREA
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onDensityFocus?.('medium')}
+                            className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
+                        >
+                            MEDIUM DENSITY SCHOOL AREA
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onDensityFocus?.('low')}
+                            className="w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-left text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                        >
+                            LOW DENSITY SCHOOL AREA
+                        </button>
+                    </div>
+                </div>
                 </div>
 
                 {selectedSchool ? (
@@ -187,13 +214,7 @@ export default function Sidebar({
                             setSearchTerm('');
                         }} />
                     </div>
-                ) : (
-                    <>
-                        <div className="p-5" data-tour="analytics-section">
-                            <Stats stats={stats} filteredCount={filteredCount} />
-                        </div>
-                    </>
-                )}
+                ) : null}
             </div>
 
         </div>

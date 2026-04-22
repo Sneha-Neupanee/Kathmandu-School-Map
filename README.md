@@ -1,4 +1,4 @@
-# Kathmandu School Intelligence Dashboard
+# Kathmandu Valley SchoolAtlas
 
 Interactive map and analytics for exploring schools across the Kathmandu Valley using OpenStreetMap data.
 
