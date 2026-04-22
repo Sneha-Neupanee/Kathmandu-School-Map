@@ -1,6 +1,6 @@
 <div align="center">
   <img src="public/favicon.svg" alt="Kathmandu School Logo" width="120" />
-  <h1>🏔️ Kathmandu School Intelligence Dashboard</h1>
+  <h1> Kathmandu School Intelligence Dashboard</h1>
   <p><strong>Advanced Spatial Analytics & Geographic Information System for Kathmandu Valley Schools</strong></p>
   
   <p>
@@ -14,7 +14,7 @@
 
 ---
 
-## 📖 Executive Summary
+## Executive Summary
 
 The **Kathmandu School Intelligence Dashboard** is a highly interactive, state-of-the-art Single Page Application (SPA) designed to solve the complexities of finding, analyzing, and visualizing educational institutions across the Kathmandu Valley. 
 
@@ -22,31 +22,31 @@ Engineered with **React 19**, **Vite**, and **MapLibre GL JS**, it pulls real-ti
 
 ---
 
-## ✨ Core Capabilities & Features
+## Core Capabilities & Features
 
-### 🗺️ Geographic Exploration (MapLibre JS)
+### Geographic Exploration (MapLibre JS)
 - **High-Performance Vector Graphics**: Fluid 60fps rendering of thousands of school markers, equipped with customized light, street, and satellite basemaps.
 - **Dynamic Clustering Engine**: Utilizes **Supercluster** to beautifully aggregate nearby schools at lower zoom levels, expanding dynamically as the user dives deeper into the valley.
 - **Density Visualization Overlay**: An advanced analytical map mode that allows users to isolate and highlight clusters by density (High, Medium, Low) using custom styling functions, *without* stripping data from memory.
 
-### 🔍 Advanced Contextual Analysis
+### Advanced Contextual Analysis
 - **Geolocation & Radial Scanning**: Integrates browser `Geolocation API` allowing users to plot their current coordinates and instantaneously analyze all institutions within a customizable radius (defaulting to 0.5km).
 - **Intelligent Omnibox Search**: Integrated **Nominatim API** reverse/forward geocoding allows users to search exact neighborhoods in Kathmandu, smoothly flying the camera to bounding boxes around the queried regions.
 - **Spatial Toolset**: Built-in interactive modes for measuring point-to-point distances, highlighting optimum locations, and defining custom analysis boundaries.
 
-### 📊 Real-Time Charts & Non-Destructive Filtering
+### Real-Time Charts & Non-Destructive Filtering
 - **Granular Institutional Filters**: Instantly toggle between Public, Private, and Community schools. State updates trigger immediate, non-destructive re-renders on the map layer and synchronize seamlessly with the dashboard.
 - **Synchronized Data Visualizations**: A dedicated `/dashboard` route leverages **Recharts** to plot school distributions across municipalities, demographic insights, and comparative analysis charts.
 - **Multi-select Comparison**: Select multiple markers directly off the map and throw them into a transient comparison tray to analyze attributes side-by-side.
 
-### 🎨 Next-Generation UI/UX Flow
+### Next-Generation UI/UX Flow
 - **Elegant, Accessible Interface**: Built entirely upon **Tailwind CSS v4**, featuring an optimized Light Theme, robust responsive gridding, and intuitive visual hierarchies. The sidebar safely avoids map occlusion through smart layout structures.
 - **Contextual First-Time Walkthrough**: A `SchoolAtlasTour` mechanism actively detects first-time visitors using `localStorage` heuristics, serving an elegant modal walkthrough of features before diving in.
 - **Production-Ready Polish**: Custom scrollbars, glass-morphism overlays, Lucide-react iconography, and strict loading skeletons.
 
 ---
 
-## 🛠️ Complete Project Architecture & File Directory
+## Complete Project Architecture & File Directory
 
 The project follows a remarkably strict, modular React architecture distinguishing presentational logic, shared state, data-fetching, and geospatial math tools.
 
@@ -100,7 +100,7 @@ Kathmandu School/
 
 ---
 
-## ⚡ Setup & Deployment Guidelines
+## Setup & Deployment Guidelines
 
 ### Foundational Prerequisites
 - **Engine**: Node.js `v18.x`+ recommended.
@@ -142,7 +142,7 @@ npm run lint
 
 ---
 
-## 💾 Caching & Rate Limit Mitigation Strategy
+## Caching & Rate Limit Mitigation Strategy
 
 Querying geographic node data from the public OpenStreetMap Overpass APIs is subjected to rate-limiting and heavy latency on complex bounds.
 
