@@ -59,7 +59,7 @@ Kathmandu School/
 │   ├── utils/              # Helper logic (formatData, analyzeArea, overpassQuery)
 │   ├── App.jsx             # Root layout and Tour context wrapper
 │   ├── MapPage.jsx         # Main interactive map and toolkit surface
-│   ├── Dashboard.jsx       # Analytics and charts view
+│   ├── Dashboard.jsx       # Analytics and charts views
 │   └── main.jsx            # React bootstrap and router injection
 ├── package.json
 └── tailwind.config.js
