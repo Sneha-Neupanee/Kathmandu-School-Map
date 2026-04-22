@@ -42,6 +42,7 @@ export default function MapPage() {
   const handleFlyToLocationRef = useRef(null); // Exposed from Map for location search
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [activeMode, setActiveMode] = useState('default');
+  const [densityLayer, setDensityLayer] = useState('all');
 
   const [comparisonSchools, setComparisonSchools] = useState([]);
   const [compareRefPoint, setCompareRefPoint] = useState(null);
@@ -55,6 +56,7 @@ export default function MapPage() {
 
   const resetView = () => {
     setActiveMode('default');
+    setDensityLayer('all');
     setSearchTerm('');
     setFilterType('all');
     setSelectedSchool(null);
@@ -197,17 +199,10 @@ export default function MapPage() {
   const handleDensityFocus = useCallback((densityLevel) => {
     const target = getDensityTarget(data, densityLevel);
     if (!target) return;
-    setActiveMode('analyze');
-    setModeState((m) => ({
-      ...m,
-      analyze: {
-        ...emptyAnalyze(),
-        center: { lat: target.lat, lng: target.lng },
-        radius: target.radius,
-      },
-    }));
+    setActiveMode('default');
+    setDensityLayer(densityLevel);
     if (handleFlyToLocationRef.current) {
-      handleFlyToLocationRef.current({ lat: target.lat, lng: target.lng });
+      handleFlyToLocationRef.current({ lat: target.lat, lng: target.lng, zoom: 13.5 });
     }
   }, [data, getDensityTarget]);
 
@@ -313,6 +308,7 @@ export default function MapPage() {
         {/* Map Component */}
         <Map
           data={filteredData}
+          densityLayer={densityLayer}
           registerFlyTo={(flyToFn) => { handleFlyToRef.current = flyToFn; }}
           onSchoolSelect={useCallback(
             (school) => {

@@ -2,11 +2,12 @@ import React from 'react';
 import { useSchoolsData } from './hooks/useSchoolsData';
 import Charts from './components/Charts';
 import Stats from './components/Stats';
+import DensityStatsCard from './components/DensityStatsCard';
 import { Link, useNavigate } from 'react-router-dom';
 import { MapIcon, LayoutDashboard, School } from 'lucide-react';
 
 export default function Dashboard() {
-    const { stats, isLoading } = useSchoolsData();
+    const { data, stats, isLoading } = useSchoolsData();
     const navigate = useNavigate();
 
     if (isLoading) return <div className="p-10 text-center font-semibold text-slate-500 animate-pulse">Loading Analytics Data...</div>;
@@ -47,37 +48,12 @@ export default function Dashboard() {
                             <li className="flex gap-3 items-start group/item"><School className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" /> <span><strong className="text-slate-700 font-semibold block mb-0.5">Naming Accuracy</strong>{stats.named} schools formally named and documented securely within OpenStreetMap data layer.</span></li>
                         </ul>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-[0_10px_32px_rgba(15,23,42,0.08)]">
-                        <h3 className="text-base font-semibold text-slate-900">School Density Explorer</h3>
-                        <p className="mt-1 text-sm text-slate-500">Jump back to map and focus by density zones.</p>
-                        <div className="mt-4 space-y-2.5">
-                            <button
-                                type="button"
-                                onClick={() => navigate('/?density=high')}
-                                className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                            >
-                                High Density View
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => navigate('/?density=medium')}
-                                className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
-                            >
-                                Medium Density View
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => navigate('/?density=low')}
-                                className="w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-left text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-                            >
-                                Low Density View
-                            </button>
-                        </div>
-                    </div>
+
                 </div>
 
                 <div className="md:col-span-2">
                     <Charts stats={stats} />
+                    <DensityStatsCard data={data} />
                 </div>
             </div>
         </div>

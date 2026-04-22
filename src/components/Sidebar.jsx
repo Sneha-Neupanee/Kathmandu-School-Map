@@ -178,33 +178,33 @@ export default function Sidebar({
                         </div>
                     </div>
 
-                <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-                    <h3 className="text-sm font-semibold tracking-tight text-slate-900">School Density Explorer</h3>
-                    <p className="mt-1 text-[11px] text-slate-500">Jump to high, medium, or low density school zones.</p>
-                    <div className="mt-3 space-y-2.5">
-                        <button
-                            type="button"
-                            onClick={() => onDensityFocus?.('high')}
-                            className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-left text-xs font-semibold text-red-700 transition hover:bg-red-100"
-                        >
-                            HIGH DENSITY SCHOOL AREA
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onDensityFocus?.('medium')}
-                            className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
-                        >
-                            MEDIUM DENSITY SCHOOL AREA
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onDensityFocus?.('low')}
-                            className="w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-left text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
-                        >
-                            LOW DENSITY SCHOOL AREA
-                        </button>
+                    <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+                        <h3 className="text-sm font-semibold tracking-tight text-slate-900">School Density Explorer</h3>
+                        <p className="mt-1 text-[11px] text-slate-500">Jump to high, medium, or low density school zones.</p>
+                        <div className="mt-3 space-y-2.5">
+                            <button
+                                type="button"
+                                onClick={() => onDensityFocus?.('high')}
+                                className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-left text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                            >
+                                View High Density School Area
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onDensityFocus?.('medium')}
+                                className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
+                            >
+                                View Medium Density School Area
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onDensityFocus?.('low')}
+                                className="w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-left text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                            >
+                                View Low Density School Area
+                            </button>
+                        </div>
                     </div>
-                </div>
                 </div>
 
                 {selectedSchool ? (

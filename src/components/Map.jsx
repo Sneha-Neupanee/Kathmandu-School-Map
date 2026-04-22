@@ -31,7 +31,7 @@ const SATELLITE_STYLE = {
     }]
 };
 
-function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool, comparisonSchools, mapStyle, viewMode, modeState, setModeState, registerResetMap, registerFlyToLocation, analyzeListHighlightId }) {
+function Map({ data, densityLayer, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool, comparisonSchools, mapStyle, viewMode, modeState, setModeState, registerResetMap, registerFlyToLocation, analyzeListHighlightId }) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const markersRef = useRef([]);
@@ -248,7 +248,35 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
                 activeMode === 'analyze' && modeState.analyze.center
                     ? (modeState.analyze.schoolsInRadius || []).map(stripDistanceKm)
                     : data;
-            updateHeatmapLayer(heatSchools, viewMode);
+
+            let finalHeatSchools = heatSchools;
+            if (densityLayer && densityLayer !== 'all') {
+                finalHeatSchools = [];
+                clusters.forEach((cluster) => {
+                    const { cluster: isCluster, point_count: pointCount } = cluster.properties;
+                    let countForDensity = isCluster ? pointCount : 1;
+                    let isHigh = countForDensity > 30;
+                    let isMed = countForDensity > 10 && countForDensity <= 30;
+                    let isLow = countForDensity <= 10;
+
+                    if (densityLayer === 'high' && !isHigh) return;
+                    if (densityLayer === 'medium' && !isMed) return;
+                    if (densityLayer === 'low' && !isLow) return;
+
+                    if (isCluster) {
+                        try {
+                            const leaves = clusterer.getLeaves(cluster.id, Infinity);
+                            finalHeatSchools.push(...leaves.map(l => l.properties));
+                        } catch (e) {
+                            // ignore errors in getLeaves
+                        }
+                    } else {
+                        finalHeatSchools.push(cluster.properties);
+                    }
+                });
+            }
+
+            updateHeatmapLayer(finalHeatSchools, viewMode);
             return;
         }
 
@@ -303,59 +331,68 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
         }
 
         clusters.forEach((cluster) => {
-                const [lon, lat] = cluster.geometry.coordinates;
-                const { cluster: isCluster, point_count: pointCount } = cluster.properties;
+            const [lon, lat] = cluster.geometry.coordinates;
+            const { cluster: isCluster, point_count: pointCount } = cluster.properties;
 
-                const el = document.createElement('div');
+            let countForDensity = isCluster ? pointCount : 1;
+            let isHigh = countForDensity > 30;
+            let isMed = countForDensity > 10 && countForDensity <= 30;
+            let isLow = countForDensity <= 10;
 
-                if (isCluster) {
-                    let colorClass = pointCount > 30 ? 'bg-red-500 border-red-200' : pointCount > 10 ? 'bg-amber-500 border-amber-200 text-amber-950' : 'bg-blue-500 border-blue-400 text-white';
-                    let sizeClass = pointCount > 30 ? 'w-10 h-10 text-sm' : pointCount > 10 ? 'w-8 h-8 text-xs' : 'w-7 h-7 text-[10px]';
+            if (densityLayer === 'high' && !isHigh) return;
+            if (densityLayer === 'medium' && !isMed) return;
+            if (densityLayer === 'low' && !isLow) return;
 
-                    el.className = `${sizeClass} ${colorClass} rounded-full border-[3px] flex items-center justify-center font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 z-0`;
-                    el.innerText = pointCount;
-                    el.title = "Click to zoom into this area";
+            const el = document.createElement('div');
 
-                    const marker = new maplibregl.Marker({ element: el })
-                        .setLngLat([lon, lat])
-                        .addTo(map.current);
+            if (isCluster) {
+                let colorClass = pointCount > 30 ? 'bg-red-500 border-red-200' : pointCount > 10 ? 'bg-amber-500 border-amber-200 text-amber-950' : 'bg-blue-500 border-blue-400 text-white';
+                let sizeClass = pointCount > 30 ? 'w-10 h-10 text-sm' : pointCount > 10 ? 'w-8 h-8 text-xs' : 'w-7 h-7 text-[10px]';
 
-                    el.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (!map.current) return;
-                        const expansionZoom = clusterer.getClusterExpansionZoom(cluster.id);
-                        map.current.flyTo({ center: [lon, lat], zoom: expansionZoom });
-                    });
-                    markersRef.current.push(marker);
-                } else {
-                    const school = cluster.properties;
-                    const isCompared = comparisonSchools && comparisonSchools.some(s => s.id === school.id);
-                    el.className = `w-3 h-3 ${isCompared ? 'bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.3)]' : 'bg-blue-600'} rounded-full border border-white shadow-sm cursor-pointer hover:scale-150 transition-transform duration-200 z-0`;
+                el.className = `${sizeClass} ${colorClass} rounded-full border-[3px] flex items-center justify-center font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 z-0`;
+                el.innerText = pointCount;
+                el.title = "Click to zoom into this area";
 
-                    const popupHtml = `
+                const marker = new maplibregl.Marker({ element: el })
+                    .setLngLat([lon, lat])
+                    .addTo(map.current);
+
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (!map.current) return;
+                    const expansionZoom = clusterer.getClusterExpansionZoom(cluster.id);
+                    map.current.flyTo({ center: [lon, lat], zoom: expansionZoom });
+                });
+                markersRef.current.push(marker);
+            } else {
+                const school = cluster.properties;
+                const isCompared = comparisonSchools && comparisonSchools.some(s => s.id === school.id);
+                el.className = `w-3 h-3 ${isCompared ? 'bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.3)]' : 'bg-blue-600'} rounded-full border border-white shadow-sm cursor-pointer hover:scale-150 transition-transform duration-200 z-0`;
+
+                const popupHtml = `
                         <div class="font-sans">
                         <h3 class="font-bold text-slate-800 text-base mb-1">${school.name}</h3>
                         ${school.type ? `<p class="text-xs text-slate-500 mb-1 capitalize border border-slate-400 inline-block px-1.5 py-0.5 rounded-md bg-slate-100">Type: ${school.type}</p>` : ''}
                         </div>
                     `;
 
-                    const popup = new maplibregl.Popup({ offset: 15, closeButton: true, closeOnClick: true, className: 'map-school-popup' })
-                        .setHTML(popupHtml);
+                const popup = new maplibregl.Popup({ offset: 15, closeButton: true, closeOnClick: true, className: 'map-school-popup' })
+                    .setHTML(popupHtml);
 
-                    const marker = new maplibregl.Marker({ element: el })
-                        .setLngLat([lon, lat])
-                        .setPopup(popup)
-                        .addTo(map.current);
+                const marker = new maplibregl.Marker({ element: el })
+                    .setLngLat([lon, lat])
+                    .setPopup(popup)
+                    .addTo(map.current);
 
-                    el.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (!map.current) return;
-                        map.current.flyTo({ center: [lon, lat], zoom: 15 });
-                        if (onSchoolSelectRef.current) onSchoolSelectRef.current(school);
-                    });
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (!map.current) return;
+                    map.current.flyTo({ center: [lon, lat], zoom: 15 });
+                    if (onSchoolSelectRef.current) onSchoolSelectRef.current(school);
+                });
 
-                    markersRef.current.push(marker);
-                }
+                markersRef.current.push(marker);
+            }
         });
         updateHeatmapLayer(data, viewMode);
         // eslint-disable-next-line react-hooks/exhaustive-deps -- updateHeatmapLayer closes over mapStyle; stable enough for markers/heatmap sync
@@ -370,6 +407,7 @@ function Map({ data, registerFlyTo, onSchoolSelect, activeMode, onMapClick, sele
         analyzeListHighlightId,
         data,
         mapStyle,
+        densityLayer,
     ]);
 
     // Map Click Listener — registered ONCE, reads fresh values via refs
