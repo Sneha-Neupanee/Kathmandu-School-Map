@@ -9,6 +9,9 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { DEFAULT_RADIUS_KM, stripDistanceKm } from './utils/analyzeArea';
 import { useLocation } from 'react-router-dom';
 
+const BALANCED_ZOOM = 12;
+const BALANCED_CENTER = { lat: 27.7172, lng: 85.3240 };
+
 const emptyAnalyze = () => ({
   center: null,
   radius: DEFAULT_RADIUS_KM,
@@ -42,7 +45,7 @@ export default function MapPage() {
   const handleFlyToLocationRef = useRef(null); // Exposed from Map for location search
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [activeMode, setActiveMode] = useState('default');
-  const [densityLayer, setDensityLayer] = useState('all');
+  const [densityMode, setDensityMode] = useState('none');
 
   const [comparisonSchools, setComparisonSchools] = useState([]);
   const [compareRefPoint, setCompareRefPoint] = useState(null);
@@ -56,7 +59,7 @@ export default function MapPage() {
 
   const resetView = () => {
     setActiveMode('default');
-    setDensityLayer('all');
+    setDensityMode('none');
     setSearchTerm('');
     setFilterType('all');
     setSelectedSchool(null);
@@ -196,23 +199,18 @@ export default function MapPage() {
     };
   }, []);
 
-  const handleDensityFocus = useCallback((densityLevel) => {
-    const target = getDensityTarget(data, densityLevel);
-    if (!target) return;
+  const handleDensityMode = useCallback((mode) => {
     setActiveMode('default');
-    setDensityLayer(densityLevel);
-    if (handleFlyToLocationRef.current) {
-      handleFlyToLocationRef.current({ lat: target.lat, lng: target.lng, zoom: 13.5 });
-    }
-  }, [data, getDensityTarget]);
+    setDensityMode(mode);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const density = params.get('density');
     if (density === 'high' || density === 'medium' || density === 'low') {
-      handleDensityFocus(density);
+      handleDensityMode(density);
     }
-  }, [location.search, handleDensityFocus]);
+  }, [location.search, handleDensityMode]);
 
   const onAreaListSchoolClick = useCallback((school) => {
     setModeState((m) => ({
@@ -261,7 +259,8 @@ export default function MapPage() {
           selectedSchool={selectedSchool}
           onCloseDetails={() => setSelectedSchool(null)}
           resetView={resetView}
-          onDensityFocus={handleDensityFocus}
+          densityMode={densityMode}
+          onDensityMode={handleDensityMode}
         />
       </div>
 
@@ -308,7 +307,7 @@ export default function MapPage() {
         {/* Map Component */}
         <Map
           data={filteredData}
-          densityLayer={densityLayer}
+          densityMode={densityMode}
           registerFlyTo={(flyToFn) => { handleFlyToRef.current = flyToFn; }}
           onSchoolSelect={useCallback(
             (school) => {

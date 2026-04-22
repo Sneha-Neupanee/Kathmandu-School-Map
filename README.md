@@ -1,134 +1,127 @@
-# Kathmandu Valley SchoolAtlas
+# Kathmandu School Intelligence Dashboard
 
-Interactive map and analytics for exploring schools across the Kathmandu Valley using OpenStreetMap data.
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![React](https://img.shields.io/badge/React-19-blue?logo=react)
+![Vite](https://img.shields.io/badge/Vite-8-purple?logo=vite)
+![MapLibre](https://img.shields.io/badge/MapLibre-GL-green?logo=maplibre)
+![Tailwind](https://img.shields.io/badge/TailwindCSS-v4-38B2AC?logo=tailwind-css)
 
----
-
-## Overview
-
-The application is a React (Vite) single-page app with two main surfaces: a **map** experience for spatial exploration, filtering, and analysis tools, and an **analytics dashboard** for aggregate statistics and charts. School data is loaded from the Overpass API, normalized in the client, and cached in the browser to limit repeat network calls.
-
----
-
-## Features
-
-### Map (`/`)
-
-- Vector map (MapLibre GL) with school markers, clustering, heatmap option, and satellite or street basemaps
-- Sidebar search, type filters, and school list aligned with the map
-- Toolbar-driven modes: measure distance, analyze area, best location, and multi-school compare
-- School detail panel from marker or list selection
-- Optional location-based analysis using the browser geolocation API
-
-### Analytics dashboard (`/dashboard`)
-
-- Summary statistics and Recharts visualizations
-- Navigation link back to the map
-
-### Data and performance
-
-- Overpass API queries with client-side caching in `localStorage`
-- Memoized filtering and derived stats in hooks and components
-
-### First-time tour (map only)
-
-On the map route, a welcome overlay (`SchoolAtlasTour`) can introduce the app. Dismissal is stored in `localStorage` under `schoolAtlasTourDismissed_v2` (value `"true"`). The initial open state is read synchronously on load; the overlay is rendered with a portal to `document.body` so it is not clipped by the main layout. When the user **skips** or **finishes** the slideshow, that key is set and the parent stops rendering the tour. To see the tour again after dismissing it, remove `schoolAtlasTourDismissed_v2` from `localStorage` and reload.
+A powerful, interactive mapping and analytics dashboard designed to explore, analyze, and visualize school distributions across the Kathmandu Valley. The platform leverages OpenStreetMap data (via the Overpass API) to deliver real-time insights, location-based intelligence, and density analytics within a highly responsive, modern UI.
 
 ---
 
-## Tech stack
+##  Key Features
 
-| Area | Technology |
-|------|----------------|
-| UI | React 19, React Router DOM 7 |
-| Build | Vite 8 |
-| Map | MapLibre GL JS, Supercluster, Turf |
-| Charts | Recharts |
-| Styling | Tailwind CSS 4 |
-| HTTP | Axios |
-| Icons | Lucide React |
-| Data | OpenStreetMap Overpass API |
+###  Interactive Map Explorer
+- **High-Performance Rendering**: Built on MapLibre GL JS with seamless vector tiles, satellite, and street basemaps.
+- **Dynamic Clustering & Aggregation**: Uses `supercluster` for smooth, responsive marker clustering at varying zoom levels.
+- **Density Visualization Layers**: Advanced layer-based density system allowing users to exclusively filter and highlight high, medium, and low-density school clusters without permanently mutating the underlying dataset.
+
+###  Advanced Search & Location Analysis
+- **Geolocation Intelligence**: Utilize the browser's Geolocation API to find and analyze schools near your exact current location (defaulting to a 0.5 km radius).
+- **Nominatim Integration**: Search for specific areas or addresses with automatic map panning and bounding box zooming.
+- **Area & Distance Tools**: Built-in modes to measure distances between points, determine the best locations, and analyze custom radii.
+
+###  Real-Time Analytics & Filters
+- **Non-Destructive Filtering**: Robust filtering capabilities by school type (Public, Private, Community) that seamlessly updates the map layer and secondary charts.
+- **Analytics Dashboard**: Synchronized visualizations (powered by Recharts) showing aggregate statistics, distributions, and demographic comparisons.
+- **Multi-School Comparison**: Select multiple schools from the map to compare proximity, type, and specific details side-by-side.
+
+###  Modern UI / UX
+- **Refined Data Interface**: Clean, accessible sidebar layout combining filters, search, and school lists without layout overlapping. Defaulting to a bright, crisp Light Mode.
+- **First-Time Guided Tour**: Integrated `SchoolAtlasTour` context that gracefully onboards new users with a one-time walkthrough. (Easily reset via `localStorage`).
+- **Production-Ready Theming**: Deeply integrated with Tailwind CSS v4 for optimized, consistent styling across components and overlays.
 
 ---
 
-## Folder structure
+##  Technology Stack
 
-```
-public/                 # Static assets (favicon, tour images, icons)
-src/
-├── components/
-│   ├── Charts.jsx
-│   ├── ComparisonPanel.jsx
-│   ├── Map.jsx
-│   ├── MapOverlayPanel.jsx
-│   ├── SchoolAtlasTour.jsx   # Welcome / guided tour overlay (map route)
-│   ├── SchoolDetails.jsx
-│   ├── SearchBar.jsx
-│   ├── Sidebar.jsx
-│   ├── Stats.jsx
-│   └── Toolbar.jsx
-├── hooks/
-│   └── useSchoolsData.js      # Fetch, cache, filter, stats
-├── utils/
-│   ├── analyzeArea.js
-│   ├── formatData.js
-│   └── overpassQuery.js
-├── App.jsx                    # Map page layout, modes, tour gate
-├── Dashboard.jsx              # Analytics dashboard page
-├── main.jsx                   # Router and app bootstrap
-├── index.css
-└── App.css
-index.html
-package.json
-vite.config.js
+| Category | Technology |
+|---|---|
+| **Core UI** | React 19, React Router DOM 7 |
+| **Build Tool** | Vite 8 |
+| **Styling** | Tailwind CSS 4, Vanilla CSS |
+| **Maps & Spatial** | MapLibre GL JS, Supercluster, Turf.js |
+| **Visualizations** | Recharts |
+| **Data Fetching** | Axios, OpenStreetMap Overpass API |
+| **Icons** | Lucide React |
+
+---
+
+##  Project Structure
+
+```text
+Kathmandu School/
+├── public/                 # Static assets (favicons, tour imagery)
+├── src/
+│   ├── components/         # Reusable UI Blocks (Sidebar, MapOverlayPanel, Toolbar)
+│   ├── hooks/              # Custom Hooks (useSchoolsData for fetching & caching)
+│   ├── utils/              # Helper logic (formatData, analyzeArea, overpassQuery)
+│   ├── App.jsx             # Root layout and Tour context wrapper
+│   ├── MapPage.jsx         # Main interactive map and toolkit surface
+│   ├── Dashboard.jsx       # Analytics and charts view
+│   └── main.jsx            # React bootstrap and router injection
+├── package.json
+└── tailwind.config.js
 ```
 
 ---
 
-## Setup
+##  Getting Started
 
 ### Prerequisites
-
 - Node.js 18 or newer
 - npm 9 or newer
 
-### Install and run
+### Installation
 
-```bash
-git clone <repository-url>
-cd "Kathmandu School"
-npm install
-npm run dev
-```
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd "Kathmandu School"
+   ```
 
-Open the URL printed in the terminal (typically `http://localhost:5173`).
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-### Production build
+3. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+   Open your browser and navigate to `http://localhost:5173`.
 
+### Production Build
+
+To build the application for production, run:
 ```bash
 npm run build
+```
+
+You can preview the production build locally using:
+```bash
 npm run preview
 ```
 
-### Lint
+### Code Quality
 
+Run ESLint to check for stylistic and programmatic issues:
 ```bash
 npm run lint
 ```
 
 ---
 
-## Data source
+##  Data Strategy & Performance
 
-School features are queried from the OpenStreetMap Overpass API. Public endpoints can be rate-limited; the app caches responses in `localStorage` to reduce repeated requests.
+To guarantee performance and reduce API rate-limiting issues from public endpoints, this project employs an aggressive client-side caching mechanism via `localStorage`. The primary dataset is fetched once per session via Overpass API, normalized via `useSchoolsData`, and persisted. Subsequent spatial filters, density switches, and type toggles are handled purely client-side without extra network traffic.
 
 ---
 
-## Routing
+##  Routing Architecture
 
-| Path | Component | Description |
-|------|-------------|-------------|
-| `/` | `App` | Main map application |
-| `/dashboard` | `Dashboard` | Charts and aggregate stats |
+The application is structured as a Single Page Application (SPA) using React Router DOM:
 
-The one-time tour runs only on the map route inside `App.jsx`.
+- `/` (`<MapPage />` rendered in `<App />`): The core mapping experience, toolbar tools, and guided tour.
+- `/dashboard` (`<Dashboard />`): Isolated analytics surface for data digest.

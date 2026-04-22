@@ -15,7 +15,8 @@ export default function Sidebar({
     selectedSchool,
     onCloseDetails,
     resetView,
-    onDensityFocus,
+    densityMode,
+    onDensityMode,
 }) {
     return (
         <div className="flex flex-col h-full bg-gradient-to-br from-slate-50/60 to-slate-100/60 backdrop-blur-md z-20 relative shadow-[16px_0_48px_rgba(15,23,42,0.1),inset_-1px_0_0_rgba(255,255,255,0.6)] border-r border-slate-300/30">
@@ -179,27 +180,38 @@ export default function Sidebar({
                     </div>
 
                     <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-                        <h3 className="text-sm font-semibold tracking-tight text-slate-900">School Density Explorer</h3>
-                        <p className="mt-1 text-[11px] text-slate-500">Jump to high, medium, or low density school zones.</p>
-                        <div className="mt-3 space-y-2.5">
+                        <div className="flex justify-between items-center mb-1">
+                            <h3 className="text-sm font-semibold tracking-tight text-slate-900">School Density Explorer</h3>
+                            {densityMode !== 'none' && (
+                                <button
+                                    onClick={() => onDensityMode?.('none')}
+                                    className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded-md transition-colors font-bold cursor-pointer hover:scale-[1.03]"
+                                    title="Reset Density Filter"
+                                >
+                                    ❌ Reset
+                                </button>
+                            )}
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500 mb-3">Jump to high, medium, or low density school zones.</p>
+                        <div className="space-y-2.5">
                             <button
                                 type="button"
-                                onClick={() => onDensityFocus?.('high')}
-                                className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-left text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                                onClick={() => onDensityMode?.('high')}
+                                className={`w-full rounded-xl border px-3 py-2 text-left text-xs font-semibold cursor-pointer transition-all duration-300 hover:scale-[1.02] shadow-sm ${densityMode === 'high' ? 'bg-red-600 text-white border-red-700 shadow-md ring-2 ring-red-300' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'}`}
                             >
                                 View High Density School Area
                             </button>
                             <button
                                 type="button"
-                                onClick={() => onDensityFocus?.('medium')}
-                                className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
+                                onClick={() => onDensityMode?.('medium')}
+                                className={`w-full rounded-xl border px-3 py-2 text-left text-xs font-semibold cursor-pointer transition-all duration-300 hover:scale-[1.02] shadow-sm ${densityMode === 'medium' ? 'bg-amber-500 text-white border-amber-600 shadow-md ring-2 ring-amber-300' : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'}`}
                             >
                                 View Medium Density School Area
                             </button>
                             <button
                                 type="button"
-                                onClick={() => onDensityFocus?.('low')}
-                                className="w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-left text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                                onClick={() => onDensityMode?.('low')}
+                                className={`w-full rounded-xl border px-3 py-2 text-left text-xs font-semibold cursor-pointer transition-all duration-300 hover:scale-[1.02] shadow-sm ${densityMode === 'low' ? 'bg-blue-600 text-white border-blue-700 shadow-md ring-2 ring-blue-300' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
                             >
                                 View Low Density School Area
                             </button>

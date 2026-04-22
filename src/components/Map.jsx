@@ -31,7 +31,7 @@ const SATELLITE_STYLE = {
     }]
 };
 
-function Map({ data, densityLayer, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool, comparisonSchools, mapStyle, viewMode, modeState, setModeState, registerResetMap, registerFlyToLocation, analyzeListHighlightId }) {
+function Map({ data, densityMode, registerFlyTo, onSchoolSelect, activeMode, onMapClick, selectedSchool, comparisonSchools, mapStyle, viewMode, modeState, setModeState, registerResetMap, registerFlyToLocation, analyzeListHighlightId }) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const markersRef = useRef([]);
@@ -250,18 +250,18 @@ function Map({ data, densityLayer, registerFlyTo, onSchoolSelect, activeMode, on
                     : data;
 
             let finalHeatSchools = heatSchools;
-            if (densityLayer && densityLayer !== 'all') {
+            if (densityMode && densityMode !== 'none') {
                 finalHeatSchools = [];
                 clusters.forEach((cluster) => {
                     const { cluster: isCluster, point_count: pointCount } = cluster.properties;
                     let countForDensity = isCluster ? pointCount : 1;
-                    let isHigh = countForDensity > 30;
-                    let isMed = countForDensity > 10 && countForDensity <= 30;
-                    let isLow = countForDensity <= 10;
+                    let isHigh = countForDensity >= 50;
+                    let isMed = countForDensity >= 15 && countForDensity < 50;
+                    let isLow = countForDensity < 15;
 
-                    if (densityLayer === 'high' && !isHigh) return;
-                    if (densityLayer === 'medium' && !isMed) return;
-                    if (densityLayer === 'low' && !isLow) return;
+                    if (densityMode === 'high' && !isHigh) return;
+                    if (densityMode === 'medium' && !isMed) return;
+                    if (densityMode === 'low' && !isLow) return;
 
                     if (isCluster) {
                         try {
@@ -335,19 +335,19 @@ function Map({ data, densityLayer, registerFlyTo, onSchoolSelect, activeMode, on
             const { cluster: isCluster, point_count: pointCount } = cluster.properties;
 
             let countForDensity = isCluster ? pointCount : 1;
-            let isHigh = countForDensity > 30;
-            let isMed = countForDensity > 10 && countForDensity <= 30;
-            let isLow = countForDensity <= 10;
+            let isHigh = countForDensity >= 50;
+            let isMed = countForDensity >= 15 && countForDensity < 50;
+            let isLow = countForDensity < 15;
 
-            if (densityLayer === 'high' && !isHigh) return;
-            if (densityLayer === 'medium' && !isMed) return;
-            if (densityLayer === 'low' && !isLow) return;
+            if (densityMode === 'high' && !isHigh) return;
+            if (densityMode === 'medium' && !isMed) return;
+            if (densityMode === 'low' && !isLow) return;
 
             const el = document.createElement('div');
 
             if (isCluster) {
-                let colorClass = pointCount > 30 ? 'bg-red-500 border-red-200' : pointCount > 10 ? 'bg-amber-500 border-amber-200 text-amber-950' : 'bg-blue-500 border-blue-400 text-white';
-                let sizeClass = pointCount > 30 ? 'w-10 h-10 text-sm' : pointCount > 10 ? 'w-8 h-8 text-xs' : 'w-7 h-7 text-[10px]';
+                let colorClass = pointCount >= 50 ? 'bg-red-500 border-red-200' : pointCount >= 15 ? 'bg-amber-500 border-amber-200 text-amber-950' : 'bg-blue-500 border-blue-400 text-white';
+                let sizeClass = pointCount >= 50 ? 'w-10 h-10 text-sm' : pointCount >= 15 ? 'w-8 h-8 text-xs' : 'w-7 h-7 text-[10px]';
 
                 el.className = `${sizeClass} ${colorClass} rounded-full border-[3px] flex items-center justify-center font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 z-0`;
                 el.innerText = pointCount;
@@ -407,7 +407,7 @@ function Map({ data, densityLayer, registerFlyTo, onSchoolSelect, activeMode, on
         analyzeListHighlightId,
         data,
         mapStyle,
-        densityLayer,
+        densityMode,
     ]);
 
     // Map Click Listener — registered ONCE, reads fresh values via refs
@@ -774,11 +774,11 @@ function Map({ data, densityLayer, registerFlyTo, onSchoolSelect, activeMode, on
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="w-4 h-4 rounded-full bg-yellow-500 border border-yellow-200 flex items-center justify-center text-[8px] font-bold text-yellow-900 shadow-sm">&gt;</span>
-                            Cluster (10+)
+                            Cluster (15+)
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="w-4 h-4 rounded-full bg-red-500 border border-red-200 flex items-center justify-center text-[8px] font-bold text-white shadow-sm">&gt;</span>
-                            Cluster (30+)
+                            Cluster (50+)
                         </div>
                         {activeMode === 'compare' && (
                             <div className="flex items-center gap-2">
