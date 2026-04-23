@@ -34,32 +34,34 @@ https://kathmandu-school-map.vercel.app/
 
 ## Screenshots
 
-Create a folder:
+## Screenshots
 
-public/screenshots/
+### 1. Default Map View with School Clustering
+Displays the initial map interface with dynamically clustered school markers. Clustering helps maintain clarity and performance when visualizing large numbers of schools across Kathmandu Valley.
 
-Add your images:
-
-- map.png  
-- density.png  
-- dashboard.png  
-- search.png  
-
-Then they will render like this:
-
-### Map View
-![Map View](public/screenshots/map.png)
-
-### Density Analysis
-![Density](public/screenshots/density.png)
-
-### Dashboard Analytics
-![Dashboard](public/screenshots/dashboard.png)
-
-### Search and Filtering
-![Search](public/screenshots/search.png)
+![Default Map View](public/screenshots/1.png)
 
 ---
+
+### 2. Geolocation-Based Radius Analysis with Filtering
+Shows nearby private schools within a user-defined 1 km radius using geolocation. Demonstrates combined functionality of spatial analysis and real-time filtering.
+
+![Radius Analysis](public/screenshots/2.png)
+
+---
+
+### 3. Analytics Dashboard and Data Insights
+Presents statistical insights including school ownership distribution and data completeness (e.g., named vs unnamed institutions), enabling deeper understanding of the dataset.
+
+![Analytics Dashboard](public/screenshots/3.png)
+
+---
+
+### 4. Density Heatmap with Satellite View
+Displays medium-density school areas using a heatmap overlay on satellite view, providing a visual understanding of geographic distribution patterns.
+
+![Density Heatmap](public/screenshots/4.png)
+
 
 ## Executive Summary
 
@@ -102,6 +104,8 @@ The system focuses on usability, performance, and efficient data handling while 
 
 The project follows a modular React architecture that separates UI components, business logic, and data handling.
 
+
+```
 Kathmandu School/
 ├── .git/
 ├── .gitignore
@@ -147,7 +151,7 @@ Kathmandu School/
         ├── analyzeArea.js
         ├── formatData.js
         └── overpassQuery.js
-
+```
 ---
 
 ## Setup & Deployment Guidelines
